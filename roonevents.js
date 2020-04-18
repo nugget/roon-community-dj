@@ -106,11 +106,6 @@ function search_loop(title, subtitle, err, r) {
 }
 
 function handler(cmd, data) {
-    play_track(
-        "Never Gonna Give You Up",
-        "Rick Astley, Pete Waterman, Mike Stock, Matt Aitken"
-    );
-
     if (typeof data !== "undefined") {
         for (var zoneevent in data) {
             var zones = data[zoneevent];
@@ -152,7 +147,12 @@ function handler(cmd, data) {
 
 function playing_handler(zd) {}
 
-function stopped_handler(zd) {}
+function stopped_handler(zd) {
+    play_track(
+        "Never Gonna Give You Up",
+        "Rick Astley, Pete Waterman, Mike Stock, Matt Aitken"
+    );
+}
 
 function core_unpaired(_core) {
     core = _core;
