@@ -1,0 +1,30 @@
+{
+    "name": "roon-community-dj",
+    "version": "0.0.1",
+    "description": "Roon Community DJ",
+    "main": "roon-community-dj.js",
+    "author": "David McNett",
+    "license": "MIT",
+    "engines": {
+        "node": ">=12.x"
+    },
+    "scripts": {
+        "start": "node roon-community-dj.js"
+    },
+    "dependencies": {
+        "install": "^0.13.0",
+        "node-roon-api": "github:roonlabs/node-roon-api",
+        "node-roon-api-browse": "github:roonlabs/node-roon-api-browse",
+        "node-roon-api-image": "github:roonlabs/node-roon-api-image",
+        "node-roon-api-settings": "github:roonlabs/node-roon-api-settings",
+        "node-roon-api-status": "github:roonlabs/node-roon-api-status",
+        "node-roon-api-transport": "github:roonlabs/node-roon-api-transport",
+        "npm": "^6.14.4",
+        "prettier": "^2.0.4",
+        "yarn": "^1.22.4"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/nugget/roon-community-dj.git"
+    }
+}
