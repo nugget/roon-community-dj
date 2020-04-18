@@ -68,7 +68,7 @@ function search_loop(title, subtitle, err, r) {
     } else if (r.list.title === "Tracks") {
         console.log("BRANCH title is Tracks");
         r.items.forEach(obj => {
-            if (obj.subtitle == subtitle) {
+            if (obj.subtitle.startsWith(subtitle)) {
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
@@ -86,7 +86,7 @@ function search_loop(title, subtitle, err, r) {
                 );
             }
 
-            if (obj.title == title && obj.subtitle == subtitle) {
+            if (obj.title == title && obj.subtitle.startsWith(subtitle)) {
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
