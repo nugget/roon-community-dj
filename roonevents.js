@@ -38,6 +38,10 @@ function do_search(zone_id, searchTerm) {
     core.services.RoonApiBrowse.browse(opts, search_loop);
 }
 
+function success(err, r) {
+    console.log("PLAYED!", err, r);
+}
+
 function search_loop(err, r) {
     console.log("R", r);
     console.log("ERR", err);
@@ -48,14 +52,51 @@ function search_loop(err, r) {
     }
 
     if (r.action == "list") {
+        console.log("BRANCH action is list");
         core.services.RoonApiBrowse.load({ hierarchy: "search" }, search_loop);
-    } else {
+    } else if (r.list.title === "Tracks") {
+        console.log("BRANCH title is Tracks");
         r.items.forEach(obj => {
-            if (obj.title == "Tracks") {
-                core.services.RoonApiBrowse.browse({hierarchy: "search", item_key: obj.item_key }, search_loop);
+            if (
+                obj.subtitle ==
+                "Rick Astley, Pete Waterman, Mike Stock, Matt Aitken"
+            ) {
+                core.services.RoonApiBrowse.browse(
+                    { hierarchy: "search", item_key: obj.item_key },
+                    search_loop
+                );
             }
         });
-    } 
+    } else {
+        console.log("BRANCH everything else");
+
+        r.items.forEach(obj => {
+            if (obj.title == "Tracks") {
+                core.services.RoonApiBrowse.browse(
+                    { hierarchy: "search", item_key: obj.item_key },
+                    search_loop
+                );
+            }
+
+            if (
+                obj.title == "Never Gonna Give You Up" &&
+                obj.subtitle ==
+                    "Rick Astley, Pete Waterman, Mike Stock, Matt Aitken"
+            ) {
+                core.services.RoonApiBrowse.browse(
+                    { hierarchy: "search", item_key: obj.item_key },
+                    search_loop
+                );
+            }
+
+            if (obj.title == "Play Now") {
+                core.services.RoonApiBrowse.browse(
+                    { hierarchy: "search", item_key: obj.item_key, zone_or_output_id: "1701fa13b47e4ae20588acf651c74e9a6302" },
+                    success
+                );
+            }
+        });
+    }
 }
 
 function handler(cmd, data) {
@@ -100,11 +141,9 @@ function handler(cmd, data) {
     }
 }
 
-function playing_handler(zd) {
-}
+function playing_handler(zd) {}
 
-function stopped_handler(zd) {
-}
+function stopped_handler(zd) {}
 
 function core_unpaired(_core) {
     core = _core;
