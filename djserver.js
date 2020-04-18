@@ -3,31 +3,38 @@ var zonedata = require("./zonedata.js"),
     config = require("./config.js");
 
 function heartbeat() {
-  clearTimeout(this.pingTimeout);
+    clearTimeout(this.pingTimeout);
 
-  // Use `WebSocket#terminate()`, which immediately destroys the connection,
-  // instead of `WebSocket#close()`, which waits for the close timer.
-  // Delay should be equal to the interval at which your server
-  // sends out pings plus a conservative assumption of the latency.
-  this.pingTimeout = setTimeout(() => {
-    this.terminate();
-  }, 30000 + 1000);
+    // Use `WebSocket#terminate()`, which immediately destroys the connection,
+    // instead of `WebSocket#close()`, which waits for the close timer.
+    // Delay should be equal to the interval at which your server
+    // sends out pings plus a conservative assumption of the latency.
+    this.pingTimeout = setTimeout(() => {
+        this.terminate();
+    }, 30000 + 1000);
 }
 
 const WebSocket = require("ws");
-const ws = new WebSocket("ws://djserver.nuggethaus.net:4242");
 
-ws.on('ping', heartbeat);
+var ws;
 
-ws.on('close', function clear() {
-  clearTimeout(this.pingTimeout);
-});
+function connect() {
+    var url = config.get("server");
+    console.log("Connecting to %s", url);
+    ws = new WebSocket(url);
 
-ws.on("open", function open() {
-    ws.on("message", function incoming(data) {
-        parse_message(data);
+    ws.on("ping", heartbeat);
+
+    ws.on("close", function clear() {
+        clearTimeout(this.pingTimeout);
     });
-});
+
+    ws.on("open", function open() {
+        ws.on("message", function incoming(data) {
+            parse_message(data);
+        });
+    });
+}
 
 function parse_message(data) {
     console.log("WSMESSAGE", data);
@@ -65,3 +72,4 @@ function announce_play(data) {
 }
 
 exports.announce_play = announce_play;
+exports.connect = connect;

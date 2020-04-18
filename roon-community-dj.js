@@ -50,3 +50,4 @@ roon.init_services({
 });
 
 roon.start_discovery();
+djserver.connect();
