@@ -65,35 +65,45 @@ function search_loop(title, subtitle, err, r) {
             { hierarchy: "search" },
             search_loop.bind(null, title, subtitle)
         );
+        return;
     } else if (r.list.title === "Tracks") {
         console.log("BRANCH title is Tracks");
         r.items.forEach(obj => {
+            console.log("startswith",obj.subtitle,subtitle);
             if (obj.subtitle.startsWith(subtitle)) {
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
                 );
+                return;
             }
         });
     } else {
         console.log("BRANCH everything else");
 
         r.items.forEach(obj => {
+            console.log(obj);
             if (obj.title == "Tracks") {
+                console.log("TRACKS HIT");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
                 );
+                return;
             }
 
+            console.log("startswith",obj.subtitle,subtitle);
             if (obj.title == title && obj.subtitle.startsWith(subtitle)) {
+                console.log("TITLE HIT");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
                 );
+                return;
             }
 
             if (obj.title == "Play Now") {
+                console.log("PLAYNOW HIT");
                 core.services.RoonApiBrowse.browse(
                     {
                         hierarchy: "search",
