@@ -1,4 +1,5 @@
 var zonedata = require("./zonedata.js"),
+    djserver = require("./djserver.js"),
     config = require("./config.js");
 
 var roon_zones = {};
@@ -28,11 +29,13 @@ function core_paired(_core) {
     });
 }
 
-function play_track(title, subtitle) {
+function play_track(title, subtitle, album) {
     console.log("PLAY_TRACK", title, subtitle);
     opts = Object.assign({
         hierarchy: "search",
-        input: title
+        input: title,
+        pop_all: true,
+        
     });
 
     console.log("PLAY opts", opts);
@@ -145,14 +148,11 @@ function handler(cmd, data) {
     }
 }
 
-function playing_handler(zd) {}
-
-function stopped_handler(zd) {
-    play_track(
-        "Never Gonna Give You Up",
-        "Rick Astley, Pete Waterman, Mike Stock, Matt Aitken"
-    );
+function playing_handler(zd) {
+    djserver.announce_play(zd);
 }
+
+function stopped_handler(zd) {}
 
 function core_unpaired(_core) {
     core = _core;
@@ -168,3 +168,4 @@ function core_unpaired(_core) {
 
 exports.core_paired = core_paired;
 exports.core_unpaired = core_unpaired;
+exports.play_track = play_track;

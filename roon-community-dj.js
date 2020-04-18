@@ -1,6 +1,8 @@
 var config = require("./config.js"),
     zonedata = require("./zonedata.js"),
-    roonevents = require("./roonevents.js");
+    roonevents = require("./roonevents.js"),
+    djserver = require("./djserver.js");
+
 
 var RoonApi = require("node-roon-api"),
     RoonApiStatus = require("node-roon-api-status"),

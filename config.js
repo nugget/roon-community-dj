@@ -87,6 +87,13 @@ function layout(settings) {
         title: "DJ Zone",
         setting: "djzone"
     });
+
+    l.layout.push({
+        type: "dropdown",
+        title: "Mode",
+        values: [{title: "master", value: "master"}, {title: "slave", value: "slave"}],
+        setting: "mode"
+    });
     
     return l;
 }
