@@ -15,7 +15,7 @@ function heartbeat() {
 }
 
 const WebSocket = require("ws");
-const ws = new WebSocket("ws://music.nuggethaus.net:8080");
+const ws = new WebSocket("ws://djserver.nuggethaus.net:4242");
 
 ws.on('ping', heartbeat);
 

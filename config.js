@@ -3,7 +3,7 @@
 // settings object with these values
 //
 DefaultConfig = {
-    server: "https://macnugget.org/rcj/",
+    server: "ws://djserver.nuggethaus.net:4242/",
     djzone: { output_id: "", name: "" },
     mode: "slave",
     debug: false
