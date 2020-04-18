@@ -28,21 +28,26 @@ function core_paired(_core) {
     });
 }
 
-function do_search(zone_id, searchTerm) {
+function play_track(title, subtitle) {
+    console.log("PLAY_TRACK", title, subtitle);
     opts = Object.assign({
         hierarchy: "search",
-        zone_or_output_id: zone_id,
-        input: searchTerm
+        input: title
     });
 
-    core.services.RoonApiBrowse.browse(opts, search_loop);
+    console.log("PLAY opts", opts);
+
+    core.services.RoonApiBrowse.browse(
+        opts,
+        search_loop.bind(null, title, subtitle)
+    );
 }
 
 function success(err, r) {
     console.log("PLAYED!", err, r);
 }
 
-function search_loop(err, r) {
+function search_loop(title, subtitle, err, r) {
     console.log("R", r);
     console.log("ERR", err);
 
@@ -53,17 +58,17 @@ function search_loop(err, r) {
 
     if (r.action == "list") {
         console.log("BRANCH action is list");
-        core.services.RoonApiBrowse.load({ hierarchy: "search" }, search_loop);
+        core.services.RoonApiBrowse.load(
+            { hierarchy: "search" },
+            search_loop.bind(null, title, subtitle)
+        );
     } else if (r.list.title === "Tracks") {
         console.log("BRANCH title is Tracks");
         r.items.forEach(obj => {
-            if (
-                obj.subtitle ==
-                "Rick Astley, Pete Waterman, Mike Stock, Matt Aitken"
-            ) {
+            if (obj.subtitle == subtitle) {
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
-                    search_loop
+                    search_loop.bind(null, title, subtitle)
                 );
             }
         });
@@ -74,24 +79,25 @@ function search_loop(err, r) {
             if (obj.title == "Tracks") {
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
-                    search_loop
+                    search_loop.bind(null, title, subtitle)
                 );
             }
 
-            if (
-                obj.title == "Never Gonna Give You Up" &&
-                obj.subtitle ==
-                    "Rick Astley, Pete Waterman, Mike Stock, Matt Aitken"
-            ) {
+            if (obj.title == title && obj.subtitle == subtitle) {
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
-                    search_loop
+                    search_loop.bind(null, title, subtitle)
                 );
             }
 
             if (obj.title == "Play Now") {
                 core.services.RoonApiBrowse.browse(
-                    { hierarchy: "search", item_key: obj.item_key, zone_or_output_id: "1701fa13b47e4ae20588acf651c74e9a6302" },
+                    {
+                        hierarchy: "search",
+                        item_key: obj.item_key,
+                        zone_or_output_id:
+                            "1701fa13b47e4ae20588acf651c74e9a6302"
+                    },
                     success
                 );
             }
@@ -100,7 +106,10 @@ function search_loop(err, r) {
 }
 
 function handler(cmd, data) {
-    do_search(config.get("djzone").output_id, "Never Gonna Give You Up");
+    play_track(
+        "Never Gonna Give You Up",
+        "Rick Astley, Pete Waterman, Mike Stock, Matt Aitken"
+    );
 
     if (typeof data !== "undefined") {
         for (var zoneevent in data) {
