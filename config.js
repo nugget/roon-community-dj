@@ -4,7 +4,7 @@
 //
 DefaultConfig = {
     server: "https://macnugget.org/rcj/",
-    zone: "",
+    djzone: { output_id: "", name: "" },
     mode: "slave",
     debug: false
 };
@@ -77,41 +77,17 @@ function layout(settings) {
     };
 
     l.layout.push({
-        type: "zone",
-        title: "DJ Zone",
-        setting: "zone"
-    });
-
-    l.layout.push({
-        type: "dropdown",
-        title: "Playback Mode",
-        values: [
-            { title: "Master", value: "master" },
-            { title: "Slave", value: "slave" }
-        ],
-        setting: "mode"
-    });
-
-    l.layout.push({
         type: "string",
         title: "Server URL",
         setting: "server"
     });
 
     l.layout.push({
-        type: "group",
-        title: "Developer Settings",
-        collapsable: true,
-        items: [
-            {
-                type: "dropdown",
-                values: fakeBoolean,
-                title: "Debug Output",
-                setting: "debug"
-            }
-        ]
+        type: "zone",
+        title: "DJ Zone",
+        setting: "djzone"
     });
-
+    
     return l;
 }
 

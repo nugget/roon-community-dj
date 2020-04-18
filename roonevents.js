@@ -28,59 +28,6 @@ function core_paired(_core) {
     });
 }
 
-function search_test() {
-    console.log("SEARCH TEST");
-
-    let searchTerm = "Never Gonna Give You Up";
-
-    if (true) {
-        do_search(config.get("streamingzone").output_id, searchTerm);
-        return;
-    }
-
-    var options = Object.assign(
-        {
-            hierarchy: "search",
-            input: searchTerm,
-            zone_or_output_id: config.get("streamingzone").output_id
-        },
-        options
-    );
-
-    core.services.RoonApiBrowse.browse(options, function (error, payload) {
-        console.log("*********************************");
-        console.log("ERROR", error);
-        console.log("PAYLOAD", payload);
-
-        var opt2 = Object.assign(
-            {
-                hierarchy: "search"
-            },
-            opt2
-        );
-
-        core.services.RoonApiBrowse.load(opt2, function (error, payload) {
-            console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-            console.log("ERROR", error);
-            console.log("PAYLOAD", payload);
-
-            var opt = Object.assign(
-                {
-                    hierarchy: "search",
-                    item_key: "8:4"
-                },
-                opt
-            );
-
-            core.services.RoonApiBrowse.load(opt, function (error, payload) {
-                console.log("%%%%%%%%%%%%%%%%");
-                console.log("ERROR", error);
-                console.log("PAYLOAD", payload);
-            });
-        });
-    });
-}
-
 function do_search(zone_id, searchTerm) {
     opts = Object.assign({
         hierarchy: "search",
@@ -112,7 +59,8 @@ function search_loop(err, r) {
 }
 
 function handler(cmd, data) {
-    search_test();
+    do_search(config.get("djzone").output_id, "Never Gonna Give You Up");
+
     if (typeof data !== "undefined") {
         for (var zoneevent in data) {
             var zones = data[zoneevent];
@@ -172,4 +120,3 @@ function core_unpaired(_core) {
 
 exports.core_paired = core_paired;
 exports.core_unpaired = core_unpaired;
-exports.search_test = search_test;
