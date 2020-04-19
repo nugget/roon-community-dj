@@ -1,5 +1,7 @@
 # Roon Community DJ
 
+[![Version npm](https://img.shields.io/npm/v/roon-community-dj.svg?logo=npm)](https://www.npmjs.com/macnugget/roon-community-dj) [![CircleCI](https://circleci.com/gh/nugget/roon-community-dj.svg?style=shield)](https://circleci.com/gh/nugget/roon-community-dj) [![Dependency Status](https://david-dm.org/nugget/roon-community-dj/status.svg)](https://david-dm.org/nugget/roon-community-dj) [![devDependency Status](https://david-dm.org/nugget/roon-community-dj/dev-status.svg)](https://david-dm.org/nugget/roon-community-dj?type=dev)
+
 ## What is this?
 
 RCDJ is an extension for the popular [Roon] music player.  It allows Roon users
@@ -83,7 +85,7 @@ The DJserver will absolutely **not** have access to:
 * Your streaming account credentials
 * Any playback taking place on any zones other than the one you've configured
   for the extension.
-* Your blood type, mother's maiden name, and name of your first pet.
+* Your blood type, mother's maiden name, or the name of your first pet.
 
 [Roon]: https://roonlabs.com/
 [Roon Discord]: https://discord.gg/4yKPf26
