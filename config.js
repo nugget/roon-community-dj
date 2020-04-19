@@ -118,7 +118,7 @@ function layout(settings) {
     l.layout.push({
         type: "dropdown",
         title: "Mode",
-        values: [{title: "master", value: "master"}, {title: "slave", value: "slave"}],
+        values: [{title: "DJ", value: "master"}, {title: "Listener", value: "slave"}],
         setting: "mode"
     });
 
@@ -142,7 +142,7 @@ function layout(settings) {
             },
             {
                 type: "string",
-                title: "Server ID",
+                title: "User ID",
                 setting: "serverid",
             }
         ]
