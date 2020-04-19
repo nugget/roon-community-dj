@@ -21,16 +21,16 @@
         "node-roon-api-status": "github:roonlabs/node-roon-api-status",
         "node-roon-api-transport": "github:roonlabs/node-roon-api-transport",
         "npm": "^6.14.4",
-        "prettier": "^2.0.4",
-        "uuid": "^7.0.3",
-        "yarn": "^1.22.4"
+        "uuid": "^7.0.3"
     },
     "repository": {
         "type": "git",
         "url": "https://github.com/nugget/roon-community-dj.git"
     },
     "devDependencies": {
+        "prettier": "^2.0.4",
         "grunt": "^1.1.0",
-        "grunt-bump": "^0.8.0"
+        "grunt-bump": "^0.8.0",
+        "yarn": "^1.22.4"
     }
 }
