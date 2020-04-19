@@ -66,6 +66,11 @@ function announce_play(data) {
         return
     }
 
+    if (data.now_playing.seek_position > 10) {
+        console.log("Not announcing in-progress playback");
+        return
+    }
+
     if (config.get("mode") == "master") {
         console.log("ANNOUNCE", data);
 
