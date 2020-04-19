@@ -25,7 +25,7 @@ function connect() {
     ws.on("open", () => {
         console.log("Connected to djserver");
         stats.svc.set_status("Connected to DJserver", false);
-        greet();
+        announce();
     });
 
     //ws.on("json", data => {
@@ -131,7 +131,7 @@ function slave_track(track) {
     }
 }
 
-function greet() {
+function announce() {
     var msg = new Object();
     msg.action = "ANNOUNCE";
     msg.serverid = config.get("serverid");
@@ -211,3 +211,4 @@ exports.search_success = search_success;
 exports.connect = connect;
 exports.roon_status = roon_status;
 exports.set_status = set_status;
+exports.announce = announce;
