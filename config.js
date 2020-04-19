@@ -24,7 +24,7 @@ function load(roon) {
 
     console.log(typeof current.serverid, current.serverid);
 
-    if (typeof current.serverid === "undefined") {
+    if (typeof current.serverid === "undefined" || current.serverid == "") {
         current.serverid = uuidv4();
         console.log("Assigning new serverid", current.serverid);
 
