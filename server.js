@@ -31,6 +31,14 @@ function log(...args) {
     console.log(ts, ...args);
 }
 
+function exit(signal) {
+    log("Exiting on "+signal);
+    process.exit();
+}
+
+process.on('SIGTERM', exit);
+process.on('SIGINT', exit);
+
 log("Server Started");
 
 wss.on("connection", function connection(ws, req) {
@@ -72,3 +80,4 @@ function greeting(ws) {
 
     ws.send(JSON.stringify(msg));
 }
+

@@ -1,8 +1,7 @@
 FROM node:12
 
 WORKDIR /usr/src/djserver
-COPY package*.json ./
+COPY package*.json server.js ./
 RUN npm install
-COPY server.js .
-EXPOSE 8080
+EXPOSE 4242
 CMD [ "node", "server.js" ]
