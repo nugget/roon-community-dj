@@ -70,7 +70,9 @@ wss.on("connection", function connection(ws, req) {
 });
 
 function checkVersion(msg) {
-    log("Checking version", msg);
+    //log("Checking version", msg);
+    // We do this in the client, so there's no urgent need to do it here in the
+    // server also.  Removing the debugging since it's intrusive.
 }
 
 function greeting(ws) {
