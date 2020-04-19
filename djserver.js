@@ -138,6 +138,7 @@ function greet() {
     msg.channel = config.get("channel");
     msg.version = pjson.version;
     msg.mode = config.get("mode");
+    msg.enabled = config.flag("enabled");
 
     ws.send(JSON.stringify(msg));
 }
