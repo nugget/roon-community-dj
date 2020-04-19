@@ -44,8 +44,8 @@ wss.on("connection", function connection(ws, req) {
         });
     });
 
-    ws.on("close"), functionclose() {
+    ws.on("close", function close() {
         log("DROP", remoteAddr);
-    }
+    });
 
 });
