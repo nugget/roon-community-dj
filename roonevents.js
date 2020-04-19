@@ -83,24 +83,6 @@ function search_loop(title, subtitle, err, r) {
 
         r.items.forEach(obj => {
             console.log(obj);
-            if (obj.title == "Tracks") {
-                console.log("TRACKS HIT");
-                core.services.RoonApiBrowse.browse(
-                    { hierarchy: "search", item_key: obj.item_key },
-                    search_loop.bind(null, title, subtitle)
-                );
-                return;
-            }
-
-            console.log("startswith",obj.subtitle,subtitle);
-            if (obj.title == title && obj.subtitle.startsWith(subtitle)) {
-                console.log("TITLE HIT");
-                core.services.RoonApiBrowse.browse(
-                    { hierarchy: "search", item_key: obj.item_key },
-                    search_loop.bind(null, title, subtitle)
-                );
-                return;
-            }
 
             if (obj.title == "Play Now") {
                 console.log("PLAYNOW HIT");
@@ -114,6 +96,27 @@ function search_loop(title, subtitle, err, r) {
                     success
                 );
             }
+
+            console.log("startswith",obj.subtitle,subtitle);
+            if (obj.title == title && obj.subtitle.startsWith(subtitle)) {
+                console.log("TITLE HIT");
+                core.services.RoonApiBrowse.browse(
+                    { hierarchy: "search", item_key: obj.item_key },
+                    search_loop.bind(null, title, subtitle)
+                );
+                return;
+            }
+
+            if (obj.title == "Tracks") {
+                console.log("TRACKS HIT");
+                core.services.RoonApiBrowse.browse(
+                    { hierarchy: "search", item_key: obj.item_key },
+                    search_loop.bind(null, title, subtitle)
+                );
+                return;
+            }
+
+
         });
     }
 }

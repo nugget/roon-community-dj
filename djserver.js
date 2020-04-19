@@ -2,37 +2,33 @@ var zonedata = require("./zonedata.js"),
     roonevents = require("./roonevents.js"),
     config = require("./config.js");
 
-function heartbeat() {
-    clearTimeout(this.pingTimeout);
-
-    // Use `WebSocket#terminate()`, which immediately destroys the connection,
-    // instead of `WebSocket#close()`, which waits for the close timer.
-    // Delay should be equal to the interval at which your server
-    // sends out pings plus a conservative assumption of the latency.
-    this.pingTimeout = setTimeout(() => {
-        this.terminate();
-    }, 30000 + 1000);
-}
-
-const WebSocket = require("ws");
-
+var WebSocket = require("@oznu/ws-connect");
 var ws;
 
 function connect() {
     var url = config.get("server");
     console.log("Connecting to %s", url);
+
     ws = new WebSocket(url);
 
-    ws.on("ping", heartbeat);
-
-    ws.on("close", function clear() {
-        clearTimeout(this.pingTimeout);
+    ws.on("message", data => {
+        parse_message(data);
     });
 
-    ws.on("open", function open() {
-        ws.on("message", function incoming(data) {
-            parse_message(data);
-        });
+    ws.on("open", () => {
+        console.log("Connected to djserver");
+    });
+
+    ws.on("json", data => {
+        console.log("JSON FROM SERVER", data);
+    });
+
+    ws.on("close", () => {
+        console.log("djserver Connection Closed");
+    });
+
+    ws.on("websocket-status", status => {
+        console.log("WSSTATUS", status);
     });
 }
 

@@ -12,6 +12,7 @@
         "start": "node roon-community-dj.js"
     },
     "dependencies": {
+        "@oznu/ws-connect": "^1.0.0",
         "install": "^0.13.0",
         "node-roon-api": "github:roonlabs/node-roon-api",
         "node-roon-api-browse": "github:roonlabs/node-roon-api-browse",
