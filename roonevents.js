@@ -45,10 +45,6 @@ function play_track(title, subtitle, album) {
     );
 }
 
-function success(err, r) {
-    console.log("PLAYED!", err, r);
-}
-
 function search_loop(title, subtitle, err, r) {
     console.log("R", r);
 
@@ -84,14 +80,14 @@ function search_loop(title, subtitle, err, r) {
             console.log("OBJ", obj);
 
             if (obj.title == "Play Now") {
-                console.log("PLAYNOW HIT");
+                console.log("PLAYNOW HIT", obj.title, obj.item_key);
                 core.services.RoonApiBrowse.browse(
                     {
                         hierarchy: "search",
                         item_key: obj.item_key,
                         zone_or_output_id: config.get("djzone").output_id
                     },
-                    success
+                    djserver.search_success.bind(null, title,subtitle)
                 );
                 return;
             } else if (

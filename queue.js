@@ -1,28 +1,34 @@
-const WebSocket = require('ws');
+var WebSocket = require("@oznu/ws-connect");
 
-const ws = new WebSocket('ws://rem.nuggethaus.net:4242');
+var serverid = "devserver";
 
-var readline = require('readline');
+var url = "ws://djserver.nuggethaus.net:4242/";
+console.log("Connecting to %s", url);
+var ws = new WebSocket(url);
+
+var readline = require("readline");
 var rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false
 });
 
-rl.on('line', function(line){
-    ws.send(line);
-})
+rl.on("line", function (line) {
+    try {
+        var track = JSON.parse(line);
+    } catch (e) {
+        console.log("NOT JSON", e);
+        return;
+    }
 
-ws.on('open', function open() {
-    console.log(`Here are some sample lines you can paste:
-{"action":"PLAYING","title":"Tearing Me Up","subtitle":"Bob Moses","album":"Days Gone By"}
-{"action":"PLAYING","title":"House In LA","subtitle":"Jungle","album":"House In LA"}
-{"action":"PLAYING","title":"Talk","subtitle":"Bob Moses","album":"Days Gone By"}
-{"action":"PLAYING","title":"Lacuna","subtitle":"Will Samson","album":"Paralanguage"}
-{"action":"PLAYING","title":"The Heat","subtitle":"Jungle","album":"Jungle"}
-    `);
+    track.serverid = serverid;
+    ws.send(JSON.stringify(track));
 });
 
-ws.on('message', function incoming(data) {
-  console.log(data);
+ws.on("open", function open() {
+    console.log("Connection open");
+});
+
+ws.on("message", function incoming(data) {
+    console.log(data);
 });
