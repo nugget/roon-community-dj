@@ -31,13 +31,21 @@ function log(...args) {
 log("Server Started");
 
 wss.on("connection", function connection(ws, req) {
-    log("Connection from ", req.connection.remoteAddress);
+    var remoteAddr = req.connection.remoteAddress;
+    log("JOIN", remoteAddr);
+
+
     ws.on("message", function incoming(data) {
-        log("Message", req.connection.remoteAddress, data);
+        log("MESG", req.connection.remoteAddress, data);
         wss.clients.forEach(function each(client) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 client.send(data);
             }
         });
     });
+
+    ws.on("close"), functionclose() {
+        log("DROP", remoteAddr);
+    }
+
 });
