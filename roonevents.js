@@ -34,8 +34,7 @@ function play_track(title, subtitle, album) {
     opts = Object.assign({
         hierarchy: "search",
         input: title,
-        pop_all: true,
-        
+        pop_all: true
     });
 
     console.log("PLAY opts", opts);
@@ -68,9 +67,9 @@ function search_loop(title, subtitle, err, r) {
     } else if (r.list.title === "Tracks") {
         console.log("BRANCH title is Tracks");
         r.items.forEach(obj => {
-            console.log("startswith",obj.subtitle,":", subtitle);
+            console.log("startswith", obj.subtitle, ":", subtitle);
             if (obj.subtitle.startsWith(subtitle)) {
-                console.log("startswith hit on ",subtitle);
+                console.log("startswith hit on ", subtitle);
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
@@ -95,7 +94,10 @@ function search_loop(title, subtitle, err, r) {
                     success
                 );
                 return;
-            } else if (obj.title == title && obj.subtitle.startsWith(subtitle)) {
+            } else if (
+                obj.title == title &&
+                obj.subtitle.startsWith(subtitle)
+            ) {
                 console.log("TITLE HIT");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
@@ -155,7 +157,22 @@ function handler(cmd, data) {
 }
 
 function playing_handler(zd) {
-    djserver.announce_play(zd);
+    if (!config.flag("enabled")) {
+        console.log("extension is disabled");
+        return
+    }
+
+    o = zd.outputs;
+
+    Object.keys(o).forEach(function (key) {
+        var val = o[key];
+        if (val.output_id == config.get("djzone").output_id) {
+            // This is a song playing in the configured DJ Zone
+            djserver.announce_play(zd);
+        } else {
+            console.log("Mismatched zone", val.output_id, config.get("djzone").output_id);
+        }
+    });
 }
 
 function stopped_handler(zd) {}

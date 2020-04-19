@@ -19,9 +19,9 @@ function connect() {
         console.log("Connected to djserver");
     });
 
-    ws.on("json", data => {
-        console.log("JSON FROM SERVER", data);
-    });
+    //ws.on("json", data => {
+    //    console.log("JSON FROM SERVER", data);
+    //});
 
     ws.on("close", () => {
         console.log("djserver Connection Closed");
@@ -68,10 +68,6 @@ function announce_play(data) {
 
     if (config.get("mode") == "master") {
         console.log("ANNOUNCE", data);
-
-        if (data.zone_id != config.get("djzone").output_id) {
-            console.log("Not my zone", config.get("djzone"));
-        }
 
         var msg = new Object();
         msg.action = "PLAYING";
