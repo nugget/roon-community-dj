@@ -39,7 +39,7 @@ function exit(signal) {
 process.on('SIGTERM', exit);
 process.on('SIGINT', exit);
 
-log("Server Started");
+log("roon-community-dj server v"+pjson.version+" launching (https://github.com/nugget/roon-community-dj)");
 
 wss.on("connection", function connection(ws, req) {
     var remoteAddr = req.connection.remoteAddress;
