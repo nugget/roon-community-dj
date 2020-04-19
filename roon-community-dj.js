@@ -45,8 +45,6 @@ var roon_svc_settings = new RoonApiSettings(roon, {
 config.load(roon);
 stats.svc = new RoonApiStatus(roon);
 
-console.log("From Main", stats.svc);
-
 roon.init_services({
     required_services: [RoonApiTransport, RoonApiBrowse],
     provided_services: [roon_svc_settings, stats.svc]

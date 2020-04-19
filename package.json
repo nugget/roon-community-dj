@@ -21,6 +21,7 @@
         "node-roon-api-status": "github:roonlabs/node-roon-api-status",
         "node-roon-api-transport": "github:roonlabs/node-roon-api-transport",
         "npm": "^6.14.4",
+        "semver": "^7.3.2",
         "uuid": "^7.0.3"
     },
     "repository": {

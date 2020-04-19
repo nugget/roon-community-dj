@@ -1,3 +1,6 @@
+var pjson = require("./package.json");
+
+const semver = require("semver");
 const WebSocket = require("ws");
 
 const wss = new WebSocket.Server({
@@ -33,9 +36,18 @@ log("Server Started");
 wss.on("connection", function connection(ws, req) {
     var remoteAddr = req.connection.remoteAddress;
     log("JOIN", remoteAddr);
-
+    greeting(ws);
 
     ws.on("message", function incoming(data) {
+        try {
+            var msg = JSON.parse(data);
+        } catch (e) {
+            log("REJECT", data);
+            return;
+        }
+
+        checkVersion(msg);
+
         log("MESG", req.connection.remoteAddress, data);
         wss.clients.forEach(function each(client) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
@@ -47,5 +59,16 @@ wss.on("connection", function connection(ws, req) {
     ws.on("close", function close() {
         log("DROP", remoteAddr);
     });
-
 });
+
+function checkVersion(msg) {
+    log("Checking version", msg);
+}
+
+function greeting(ws) {
+    var msg = new Object();
+    msg.action = "CONNECT";
+    msg.version = pjson.version;
+
+    ws.send(JSON.stringify(msg));
+}

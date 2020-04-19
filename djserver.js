@@ -4,6 +4,8 @@ var zonedata = require("./zonedata.js"),
     stats = require("./status.js"),
     pjson = require("./package.json");
 
+const semver = require("semver");
+
 var WebSocket = require("@oznu/ws-connect");
 var ws;
 var roon_status = "Initializing";
@@ -42,37 +44,59 @@ function connect() {
 function parse_message(data) {
     console.log("WSMESSAGE", data);
 
-    if (!config.flag("enabled")) {
-        return;
-    }
-
     try {
-        var track = JSON.parse(data);
+        var msg = JSON.parse(data);
     } catch (e) {
         console.log("NOT JSON", e);
         return;
     }
 
+    check_version(msg);
 
-    if (track.channel == config.get("channel")) {
-        switch (track.action) {
+    if (!config.flag("enabled")) {
+        return;
+    }
+
+    if (msg.channel == config.get("channel")) {
+        console.log("msg.action was '" + msg.action + "'");
+        switch (msg.action) {
             case "PLAYING":
-                slave_track(track);
+                slave_track(msg);
                 listeners = 0;
                 break;
             case "SLAVE":
                 listeners++;
                 break;
             case "POLL":
-                poll_response(track);
+                poll_response(msg);
                 break;
             default:
-                console.log("Unknown message type", track.action);
+                console.log("Unknown message type", msg.action);
                 break;
         }
 
         set_status();
     }
+}
+
+function check_version(msg) {
+    if (!semver.valid(msg.version)) {
+        disable("Bogus server version (" + msg.version + ")");
+        return;
+    }
+
+    if (!semver.satisfies(pjson.version, msg.version)) {
+        disable("Needs Upgrade (DJ server is v" + msg.version + ")");
+        return;
+    }
+
+    return;
+}
+
+function disable(msg) {
+    stats.svc.set_status(msg, true);
+    config.set("enabled", false);
+    return;
 }
 
 function set_status() {
@@ -89,7 +113,7 @@ function set_status() {
     }
 
     msg += config.get("channel");
-    msg += " (" + listeners + " listeners)"
+    msg += " (" + listeners + " listeners)";
 
     console.log("set_status", msg);
     stats.svc.set_status(msg, false);
