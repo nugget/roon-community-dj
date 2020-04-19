@@ -35,6 +35,10 @@ function connect() {
 function parse_message(data) {
     console.log("WSMESSAGE", data);
 
+    if (!config.flag("enabled")) {
+        return
+    }
+
     try {
         var track = JSON.parse(data);
     } catch (e) {
@@ -42,14 +46,26 @@ function parse_message(data) {
         return;
     }
 
-    console.log("TRACK", track);
 
-    if (config.get("mode") == "slave") {
-        roonevents.play_track(track.title, track.subtitle);
+    if (track.channel == config.get("channel")) {
+        console.log("TRACK", track);
+        if (config.get("mode") == "slave") {
+            roonevents.play_track(track.title, track.subtitle);
+        } else {
+            if (config.get("serverid") != track.serverid) {
+                console.log("NEW MASTER DETECTED");
+                config.set("mode", "slave");
+                roonevents.play_track(track.title, track.subtitle);
+            }
+        }
     }
 }
 
 function announce_play(data) {
+    if (!config.flag("enabled")) {
+        return
+    }
+
     if (config.get("mode") == "master") {
         console.log("ANNOUNCE", data);
 
@@ -59,6 +75,8 @@ function announce_play(data) {
 
         var msg = new Object();
         msg.action = "PLAYING";
+        msg.serverid = config.get("serverid");
+        msg.channel = config.get("channel");
         msg.title = data.now_playing.three_line.line1;
         msg.subtitle = data.now_playing.three_line.line2;
         msg.album = data.now_playing.three_line.line3;
