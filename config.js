@@ -1,3 +1,5 @@
+const uuidv4 = require('uuid/v4');
+
 //
 // If we failed to load a config from roon.load_config we will populate our
 // settings object with these values
@@ -6,7 +8,10 @@ DefaultConfig = {
     server: "ws://djserver.nuggethaus.net:4242/",
     djzone: { output_id: "", name: "" },
     mode: "slave",
-    debug: false
+    debug: false,
+    channel: "discord",
+    enabled: true,
+    serverid: "",
 };
 
 var current = {};
@@ -16,6 +21,14 @@ function load(roon) {
     console.log("Loading configuration cache");
     current = roon.load_config("settings") || DefaultConfig;
     debug = current.debug;
+
+    console.log(typeof current.serverid, current.serverid);
+
+    if (typeof current.serverid === "undefined") {
+        current.serverid = uuidv4();
+        console.log("Assigning new serverid", current.serverid);
+
+    }
     console.log("Debugging output is " + debug);
 }
 
@@ -24,6 +37,13 @@ function get(_key) {
         console.log("config getter for %s returned", _key, current[_key]);
     }
     return current[_key];
+}
+
+function set(_key, value) {
+    current[_key] = value;
+    if (debug) {
+        console.log("config setter for %s with ", _key, current[_key]);
+    }
 }
 
 function flag(_key) {
@@ -77,6 +97,13 @@ function layout(settings) {
     };
 
     l.layout.push({
+        type: "dropdown",
+        title: "Enabled",
+        values: fakeBoolean,
+        setting: "enabled"
+    });
+
+    l.layout.push({
         type: "string",
         title: "Server URL",
         setting: "server"
@@ -94,6 +121,32 @@ function layout(settings) {
         values: [{title: "master", value: "master"}, {title: "slave", value: "slave"}],
         setting: "mode"
     });
+
+    l.layout.push({
+        type: "string",
+        title: "channel",
+        setting: "channel"
+    });
+
+
+    l.layout.push({
+        type: "group",
+        title: "Developer Settings",
+        collapsable: true,
+        items: [
+            {
+                type: "dropdown",
+                values: fakeBoolean,
+                title: "Debug Output",
+                setting: "debug"
+            },
+            {
+                type: "string",
+                title: "Server ID",
+                setting: "serverid",
+            }
+        ]
+    });
     
     return l;
 }
@@ -101,6 +154,7 @@ function layout(settings) {
 exports.load = load;
 exports.layout = layout;
 exports.get = get;
+exports.set = set;
 exports.update = update;
 exports.all = all;
 exports.flag = flag;
