@@ -1,12 +1,14 @@
 var zonedata = require("./zonedata.js"),
     roonevents = require("./roonevents.js"),
     config = require("./config.js"),
+    stats = require("./status.js"),
     pjson = require("./package.json");
 
 var WebSocket = require("@oznu/ws-connect");
 var ws;
-
 var roon_status = "Initializing";
+
+var listeners = 0;
 
 function connect() {
     var url = config.get("server");
@@ -20,6 +22,7 @@ function connect() {
 
     ws.on("open", () => {
         console.log("Connected to djserver");
+        stats.svc.set_status("Connected to DJserver", false);
         greet();
     });
 
@@ -50,10 +53,15 @@ function parse_message(data) {
         return;
     }
 
+
     if (track.channel == config.get("channel")) {
         switch (track.action) {
             case "PLAYING":
                 slave_track(track);
+                listeners = 0;
+                break;
+            case "SLAVE":
+                listeners++;
                 break;
             case "POLL":
                 poll_response(track);
@@ -62,7 +70,29 @@ function parse_message(data) {
                 console.log("Unknown message type", track.action);
                 break;
         }
+
+        set_status();
     }
+}
+
+function set_status() {
+    if (!config.flag("enabled")) {
+        stats.svc.set_status("Extension disabled", false);
+        return;
+    }
+
+    var msg = "";
+    if (config.get("mode") == "master") {
+        msg = "DJing in ";
+    } else {
+        msg = "Listening to ";
+    }
+
+    msg += config.get("channel");
+    msg += " (" + listeners + " listeners)"
+
+    console.log("set_status", msg);
+    stats.svc.set_status(msg, false);
 }
 
 function slave_track(track) {
@@ -113,9 +143,10 @@ function announce_play(data) {
 
     if (config.get("mode") == "master") {
         msg.action = "PLAYING";
+        listeners = 0;
     } else {
         msg.action = "SLAVE";
- 
+        listeners++;
     }
 
     msg.serverid = config.get("serverid");
@@ -127,6 +158,8 @@ function announce_play(data) {
     msg.length = data.now_playing.length;
 
     ws.send(JSON.stringify(msg));
+
+    set_status();
 }
 
 function search_success(title, subtitle, err, r) {
@@ -152,3 +185,4 @@ exports.announce_play = announce_play;
 exports.search_success = search_success;
 exports.connect = connect;
 exports.roon_status = roon_status;
+exports.set_status = set_status;

@@ -2,11 +2,12 @@ var config = require("./config.js"),
     zonedata = require("./zonedata.js"),
     roonevents = require("./roonevents.js"),
     djserver = require("./djserver.js"),
-    pjson = require('./package.json');
+    stats = require("./status.js"),
+    pjson = require("./package.json");
 
 var RoonApi = require("node-roon-api"),
-    RoonApiStatus = require("node-roon-api-status"),
     RoonApiTransport = require("node-roon-api-transport"),
+    RoonApiStatus = require("node-roon-api-status"),
     RoonApiSettings = require("node-roon-api-settings"),
     RoonApiImage = require("node-roon-api-image"),
     RoonApiBrowse = require("node-roon-api-browse");
@@ -21,8 +22,6 @@ var roon = new RoonApi({
     core_paired: roonevents.core_paired,
     core_unpaired: roonevents.core_unpaired
 });
-
-var roon_svc_status = new RoonApiStatus(roon);
 
 var roon_svc_settings = new RoonApiSettings(roon, {
     get_settings: function (cb) {
@@ -39,15 +38,24 @@ var roon_svc_settings = new RoonApiSettings(roon, {
             roon.save_config("settings", l.values);
             config.update(l.values);
         }
+        djserver.set_status();
     }
 });
 
 config.load(roon);
+stats.svc = new RoonApiStatus(roon);
+
+console.log("From Main", stats.svc);
 
 roon.init_services({
     required_services: [RoonApiTransport, RoonApiBrowse],
-    provided_services: [roon_svc_settings, roon_svc_status]
+    provided_services: [roon_svc_settings, stats.svc]
 });
 
 roon.start_discovery();
 djserver.connect();
+if (config.flag("enabled")) {
+    stats.svc.set_status("Extension enabled", false);
+} else {
+    stats.svc.set_status("Extension disabled", false);
+}

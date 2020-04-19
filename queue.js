@@ -30,5 +30,14 @@ ws.on("open", function open() {
 });
 
 ws.on("message", function incoming(data) {
-    console.log(data);
+    try {
+        var track = JSON.parse(data);
+    } catch (e) {
+        console.log("NOT JSON", e);
+        return;
+    }
+
+    if (track.action == "PLAYING") {
+        console.log(data);
+    }
 });
