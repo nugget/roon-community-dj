@@ -1,6 +1,7 @@
 var zonedata = require("./zonedata.js"),
     roonevents = require("./roonevents.js"),
-    config = require("./config.js");
+    config = require("./config.js"),
+    pjson = require('./package.json');
 
 var WebSocket = require("@oznu/ws-connect");
 var ws;
@@ -19,6 +20,7 @@ function connect() {
 
     ws.on("open", () => {
         console.log("Connected to djserver");
+        greet();
     });
 
     //ws.on("json", data => {
@@ -73,6 +75,16 @@ function slave_track(track) {
             roonevents.play_track(track.title, track.subtitle);
         }
     }
+}
+
+function greet() {
+    var msg = new Object();
+    msg.action = "ANNOUNCE";
+    msg.serverid = config.get("serverid");
+    msg.channel = config.get("channel");
+    msg.version = pjson.version;
+
+    ws.send(JSON.stringify(msg));
 }
 
 function poll_response(track) {
