@@ -1,6 +1,6 @@
 {
     "name": "roon-community-dj",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "Roon Community DJ",
     "main": "roon-community-dj.js",
     "author": "David McNett",
@@ -28,5 +28,9 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/nugget/roon-community-dj.git"
+    },
+    "devDependencies": {
+        "grunt": "^1.1.0",
+        "grunt-bump": "^0.8.0"
     }
 }
