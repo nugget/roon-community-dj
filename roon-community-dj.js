@@ -14,7 +14,7 @@ var RoonApi = require("node-roon-api"),
 var roon = new RoonApi({
     extension_id: "org.macnugget.community-dj",
     display_name: "Community DJ",
-    display_version: "0.0.1",
+    display_version: pjson.version,
     publisher: "Nugget",
     email: "nugget@macnugget.org",
     website: "https://github.com/nugget/roon-community-dj",
