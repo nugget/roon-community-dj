@@ -52,7 +52,7 @@ function play_track(title, subtitle, album) {
 
     opts = Object.assign({
         hierarchy: "search",
-        input: title,
+        input: title + " " + subtitle,
         pop_all: true
     });
 
@@ -117,6 +117,14 @@ function search_loop(title, subtitle, err, r) {
                 );
                 console.log(loopid + " return 2");
                 return;
+            } else if (obj.title == "Tracks") {
+                console.log(loopid + " TRACKS HIT");
+                core.services.RoonApiBrowse.browse(
+                    { hierarchy: "search", item_key: obj.item_key },
+                    search_loop.bind(null, title, subtitle)
+                );
+                console.log(loopid + " return 4");
+                return;
             } else if (
                 obj.title == title &&
                 obj.subtitle.startsWith(subtitle)
@@ -127,14 +135,6 @@ function search_loop(title, subtitle, err, r) {
                     search_loop.bind(null, title, subtitle)
                 );
                 console.log(loopid + " return 3");
-                return;
-            } else if (obj.title == "Tracks") {
-                console.log(loopid + " TRACKS HIT");
-                core.services.RoonApiBrowse.browse(
-                    { hierarchy: "search", item_key: obj.item_key },
-                    search_loop.bind(null, title, subtitle)
-                );
-                console.log(loopid + " return 4");
                 return;
             }
         }
