@@ -2,6 +2,8 @@ var zonedata = require("./zonedata.js"),
     djserver = require("./djserver.js"),
     config = require("./config.js");
 
+const uuidv4 = require('uuid/v4');
+
 var roon_zones = {};
 
 var core, transport;
@@ -44,7 +46,7 @@ function play_track(title, subtitle, album) {
     // for our search.  It might be that we want to replace() the slash with
     // a comma, but this seems like a more resilient strategy as a first
     // attempt.
-    subtitle = subtitle.split(' / ')[0];
+    subtitle = subtitle.split(" / ")[0];
 
     console.log("NORMALIZED", title, subtitle);
 
@@ -63,7 +65,11 @@ function play_track(title, subtitle, album) {
 }
 
 function search_loop(title, subtitle, err, r) {
-    console.log("R", r);
+    loopid = uuidv4().split("-")[0];
+
+    console.log("STARTING search_loop id", loopid);
+
+    console.log(loopid + " R", r);
 
     if (err) {
         console.log("SEARCH_LOOP ERROR", err, r);
@@ -71,61 +77,67 @@ function search_loop(title, subtitle, err, r) {
     }
 
     if (r.action == "list") {
-        console.log("BRANCH action is list");
+        console.log(loopid + " BRANCH action is list");
         core.services.RoonApiBrowse.load(
             { hierarchy: "search" },
             search_loop.bind(null, title, subtitle)
         );
+        console.log(loopid + " return 0");
         return;
     } else if (r.list.title === "Tracks") {
-        console.log("BRANCH title is Tracks");
-        r.items.forEach(obj => {
-            console.log("startswith", obj.subtitle, ":", subtitle);
+        console.log(loopid + " BRANCH title is Tracks");
+
+        for (var obj of r.items) {
+            console.log(loopid + " startswith", obj.subtitle, ":", subtitle);
             if (obj.subtitle.startsWith(subtitle)) {
-                console.log("startswith hit on ", subtitle);
+                console.log(loopid + " startswith hit on ", subtitle);
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
                 );
+                console.log(loopid + " return 1");
                 return;
             }
-        });
+        };
     } else {
-        console.log("BRANCH everything else");
+        console.log(loopid + " BRANCH everything else");
 
-        r.items.forEach(obj => {
-            console.log("OBJ", obj);
+        for (var obj of r.items) {
+            console.log(loopid + " OBJ", obj);
 
             if (obj.title == "Play Now") {
-                console.log("PLAYNOW HIT", obj.title, obj.item_key);
+                console.log(loopid + " PLAYNOW HIT", obj.title, obj.item_key);
                 core.services.RoonApiBrowse.browse(
                     {
                         hierarchy: "search",
                         item_key: obj.item_key,
                         zone_or_output_id: config.get("djzone").output_id
                     },
-                    djserver.search_success.bind(null, title,subtitle)
+                    djserver.search_success.bind(null, title, subtitle)
                 );
+                console.log(loopid + " return 2");
                 return;
             } else if (
                 obj.title == title &&
                 obj.subtitle.startsWith(subtitle)
             ) {
-                console.log("TITLE HIT");
+                console.log(loopid + " TITLE HIT");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
                 );
+                console.log(loopid + " return 3");
                 return;
             } else if (obj.title == "Tracks") {
-                console.log("TRACKS HIT");
+                console.log(loopid + " TRACKS HIT");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
                 );
+                console.log(loopid + " return 4");
                 return;
             }
-        });
+        }
     }
 }
 
@@ -172,7 +184,7 @@ function handler(cmd, data) {
 function playing_handler(zd) {
     if (!config.flag("enabled")) {
         console.log("extension is disabled");
-        return
+        return;
     }
 
     o = zd.outputs;
@@ -183,7 +195,11 @@ function playing_handler(zd) {
             // This is a song playing in the configured DJ Zone
             djserver.announce_play(zd);
         } else {
-            console.log("Mismatched zone", val.output_id, config.get("djzone").output_id);
+            console.log(
+                "Mismatched zone",
+                val.output_id,
+                config.get("djzone").output_id
+            );
         }
     });
 }
