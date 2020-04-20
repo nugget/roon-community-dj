@@ -5,7 +5,7 @@ const uuidv4 = require('uuid/v4');
 // settings object with these values
 //
 DefaultConfig = {
-    server: "wss://macnugget.org/rcdj",
+    server: "wss://dj.macnugget.org/",
     djzone: { output_id: "", name: "" },
     mode: "slave",
     debug: false,
