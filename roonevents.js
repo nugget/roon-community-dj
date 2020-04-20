@@ -29,8 +29,25 @@ function core_paired(_core) {
     });
 }
 
+function normalize(text) {
+    return text;
+}
+
 function play_track(title, subtitle, album) {
-    console.log("PLAY_TRACK", title, subtitle);
+    console.log("PLAY_TRACKi '%s', '%s'", title, subtitle);
+
+    title = normalize(title);
+    subtitle = normalize(subtitle);
+    // We have troubles because Roon loves to emit multi-artist subtitles
+    // separated with the slash character.  But in searches it expects comma
+    // seperated artits.  We punt and just strip off all but the primary artist
+    // for our search.  It might be that we want to replace() the slash with
+    // a comma, but this seems like a more resilient strategy as a first
+    // attempt.
+    subtitle = subtitle.split(' / ')[0];
+
+    console.log("NORMALIZED", title, subtitle);
+
     opts = Object.assign({
         hierarchy: "search",
         input: title,
