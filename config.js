@@ -9,7 +9,7 @@ DefaultConfig = {
     djzone: { output_id: "", name: "" },
     mode: "slave",
     debug: false,
-    channel: "discord",
+    channel: "chaos",
     enabled: true,
     serverid: "",
 };

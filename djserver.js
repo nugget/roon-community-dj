@@ -38,6 +38,9 @@ function connect() {
 
     ws.on("websocket-status", status => {
         console.log("WSSTATUS", status);
+        if (status.indexOf("Error") > -1) {
+            stats.svc.set_status(status, true);
+        }
     });
 }
 
