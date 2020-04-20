@@ -38,6 +38,7 @@ var roon_svc_settings = new RoonApiSettings(roon, {
             roon.save_config("settings", l.values);
             config.update(l.values);
         }
+        djserver.reconnectIfNeeded();
         djserver.set_status();
         djserver.announce();
     }

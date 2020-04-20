@@ -44,6 +44,15 @@ function connect() {
     });
 }
 
+function reconnectIfNeeded() {
+    if (config.get("server") != ws.address) {
+        console.log("Recycling connection to DJ Server");
+        ws.close();
+        set_status("Reconnecting", false);
+        connect();
+    }
+}
+
 function parse_message(data) {
     console.log("WSMESSAGE", data);
 
@@ -212,6 +221,8 @@ function search_success(title, subtitle, err, r) {
 exports.announce_play = announce_play;
 exports.search_success = search_success;
 exports.connect = connect;
+exports.reconnectIfNeeded = reconnectIfNeeded;
 exports.roon_status = roon_status;
 exports.set_status = set_status;
 exports.announce = announce;
+exports.reconnectIfNeeded = reconnectIfNeeded;
