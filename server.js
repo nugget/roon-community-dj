@@ -42,7 +42,7 @@ process.on('SIGINT', exit);
 log("roon-community-dj server v"+pjson.version+" launching (https://github.com/nugget/roon-community-dj)");
 
 wss.on("connection", function connection(ws, req) {
-    var remoteAddr = req.connection.remoteAddress;
+    var remoteAddr = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     log("JOIN", remoteAddr);
     greeting(ws);
 
@@ -56,7 +56,7 @@ wss.on("connection", function connection(ws, req) {
 
         checkVersion(msg);
 
-        log("MESG", req.connection.remoteAddress, data);
+        log("MESG", remoteAddr, data);
         wss.clients.forEach(function each(client) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 client.send(data);
