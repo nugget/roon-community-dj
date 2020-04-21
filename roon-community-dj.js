@@ -21,12 +21,15 @@ var roon = new RoonApi({
     email: pjson.author.email,
     website: pjson.homepage,
     core_paired: roonevents.core_paired,
-    core_unpaired: roonevents.core_unpaired
+    core_unpaired: roonevents.core_unpaired,
+    log_level: "none"
 });
 
 var roon_svc_settings = new RoonApiSettings(roon, {
     get_settings: function (cb) {
         cb(config.layout(config.all()));
+        log.info("Loaded extension settings from roon core");
+        set_core_log_level();
     },
     save_settings: function (req, isdryrun, settings) {
         let l = config.layout(settings.values);
@@ -38,12 +41,25 @@ var roon_svc_settings = new RoonApiSettings(roon, {
             roon_svc_settings.update_settings(l);
             roon.save_config("settings", l.values);
             config.update(l.values);
+            set_core_log_level();
+            log.info("Saved extension settings to roon core");
+
+            djserver.reconnectIfNeeded();
+            djserver.set_status();
+            djserver.announce();
         }
-        djserver.reconnectIfNeeded();
-        djserver.set_status();
-        djserver.announce();
     }
 });
+
+function set_core_log_level() {
+    if (config.flag("debug")) {
+        // Can also set to "all" but that's way too chatty for me
+        roon.log_level = "quiet";
+    } else {
+        roon.log_level = "none";
+    }
+    log.info("Set roon core log level to %s", roon.log_level);
+}
 
 config.load(roon);
 stats.svc = new RoonApiStatus(roon);
@@ -61,4 +77,5 @@ if (config.flag("enabled")) {
     stats.svc.set_status("Extension disabled", false);
 }
 
-log.debug(roon);
+set_core_log_level();
+log.debug("Hello", roon);

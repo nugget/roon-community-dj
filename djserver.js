@@ -38,7 +38,7 @@ function connect() {
     });
 
     ws.on("websocket-status", status => {
-        log.info("WSSTATUS", status);
+        log.info("STATUS", status);
         if (status.indexOf("Error") > -1) {
             stats.svc.set_status(status, true);
         }
@@ -55,7 +55,7 @@ function reconnectIfNeeded() {
 }
 
 function parse_message(data) {
-    log.info("WSMESSAGE", data);
+    log.info("MESSAGE", data);
 
     try {
         var msg = JSON.parse(data);
@@ -194,7 +194,7 @@ function announce_play(data) {
     msg.length = data.now_playing.length;
 
     ws.send(JSON.stringify(msg));
-    log.info("Announced playback of %s - %s", msg.title, msg.subtitle);
+    log.info("Announced playback of '%s - %s'", msg.title, msg.subtitle);
     set_status();
 }
 
