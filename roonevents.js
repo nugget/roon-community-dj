@@ -70,6 +70,7 @@ function search_loop(title, subtitle, err, r) {
 
     if (err) {
         console.log("SEARCH_LOOP ERROR", err, r);
+        djserver.report_error("search failed", err, {"title": title, "subtitle": subtitle, "r": r});
         return;
     }
 

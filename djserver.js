@@ -199,13 +199,28 @@ function announce_play(data) {
     set_status();
 }
 
+function report_error(text, err, trace) {
+    if (config.flag("debug")) {
+        var msg = new Object();
+        msg.action = "ERROR";
+        msg.serverid = config.get("serverid");
+        msg.channel = config.get("channel");
+        msg.text = text;
+        msg.errtext = err;
+        msg.trace = trace;
+
+        ws.send(JSON.stringify(msg));
+    }
+}
+
 function search_success(title, subtitle, err, r) {
     if (err) {
         console.log("SEARCH_SUCCESS error", err);
+        report_error("search failed", err, {"title": title, "subtitle": subtitle, "r": r});
         return;
     }
 
-    if (config.get("mode") == "slave") {
+    if (config.get("mode") == "slave" && config.flag("debug")) {
         var msg = new Object();
         msg.action = "SEARCH_SUCCESS";
         msg.serverid = config.get("serverid");
@@ -226,3 +241,4 @@ exports.roon_status = roon_status;
 exports.set_status = set_status;
 exports.announce = announce;
 exports.reconnectIfNeeded = reconnectIfNeeded;
+exports.report_error = report_error;
