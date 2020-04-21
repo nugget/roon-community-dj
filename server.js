@@ -68,6 +68,14 @@ wss.on("connection", function connection(ws, req) {
             ws.dj.serverid = msg.serverid;
         }
 
+        if (typeof msg.enabled !== "undefined") {
+            ws.dj.enabled = msg.enabled;
+        }
+
+        if (typeof msg.mode !== "undefined") {
+            ws.dj.mode = msg.mode;
+        }
+
         log("ws.dj is ", ws.dj);
 
         checkVersion(msg);
