@@ -171,6 +171,8 @@ function checkVersion(c) {
         reject(c, reason);
         return false;
     }
+
+    return true;
 }
 
 function greeting(c) {
