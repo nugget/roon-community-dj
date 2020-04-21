@@ -1,9 +1,9 @@
 var pjson = require("./package.json");
-
-var debug = true;
+var debugFlag = true;
 
 const semver = require("semver");
 const WebSocket = require("ws");
+const util = require("util");
 
 const wss = new WebSocket.Server({
     port: 4242,
@@ -28,59 +28,78 @@ const wss = new WebSocket.Server({
     }
 });
 
-function log(...args) {
+// This is a bare server log for non-connection-specific log lines.  It emits
+// to stdout with the current timestamp prepended.
+//
+function log(template, ...args) {
     var ts = new Date().toISOString().replace(/T/, " ").replace(/\..+/, "");
-    console.log(ts, ...args);
+    template = "%s " + template;
+    console.log(template, ts, ...args);
+}
+
+// This is a prototype function which is bound to each websocket client object
+// which will emit a lot line with the timestamp and client remote address
+// prepended.  Not to be called directly, it's instead bound to ws.log during
+// connection setup and should be invoked using the method on the ws object.
+//
+function clientLog(ra, template, ...args) {
+    var ts = new Date().toISOString().replace(/T/, " ").replace(/\..+/, "");
+    template = "%s [%s] " + template;
+    console.log(template, ts, ra, ...args);
+}
+
+function debug(...args) {
+    if (!debugFlag) {
+        return;
+    }
+    log(...args)
+}
+
+function clientDebug(...args) {
+    if (!debugFlag) {
+        return;
+    }
+    clientLog(...args)
 }
 
 function exit(signal) {
-    log("Exiting on " + signal);
+    log("Exiting on %s", signal);
     process.exit();
 }
 
 process.on("SIGTERM", exit);
 process.on("SIGINT", exit);
 
-log(pjson.name + " v" + pjson.version + " launching (" + pjson.homepage + ")");
+log("%s v%s launching (%s)", pjson.name, pjson.version, pjson.homepage);
 
 wss.on("connection", function connection(ws, req) {
-    var remoteAddr =
-        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-    log("JOIN", remoteAddr);
-    greeting(ws);
     ws.dj = {};
+    setRemoteAddr(ws, req);
+    ws.log = clientLog.bind(null, ws.dj.remoteAddr);
+    ws.debug = clientDebug.bind(null, ws.dj.remoteAddr);
+
+    ws.log("New remote connection established");
+
+    greeting(ws);
 
     ws.on("message", function incoming(data) {
         try {
             var msg = JSON.parse(data);
         } catch (e) {
-            log("REJECT", data);
+            ws.log("BOGUS", data);
             return;
         }
 
-        // Set some of our client attributes to the websocket object for
-        // tracking internally
-        if (typeof msg.channel !== "undefined") {
-            ws.dj.channel = msg.channel;
-        }
+        probeClient(ws, msg);
 
-        if (typeof msg.serverid !== "undefined") {
-            ws.dj.serverid = msg.serverid;
+        if (!checkVersion(ws)) {
+            ws.log("IGNORED", data);
+            return;
         }
-
-        if (typeof msg.enabled !== "undefined") {
-            ws.dj.enabled = msg.enabled;
-        }
-
-        if (typeof msg.mode !== "undefined") {
-            ws.dj.mode = msg.mode;
-        }
-
-        checkVersion(msg);
 
         // console.log(ws);
 
-        log("MESG", remoteAddr, data);
+        ws.log("MESG", data);
         wss.clients.forEach(function each(client) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 if (
@@ -94,20 +113,80 @@ wss.on("connection", function connection(ws, req) {
     });
 
     ws.on("close", function close() {
-        log("DROP", remoteAddr, ws.dj.serverid, ws.dj.channel);
+        ws.log("DROP", ws.dj.serverid, ws.dj.channel);
     });
 });
 
-function checkVersion(msg) {
-    //log("Checking version", msg);
-    // We do this in the client, so there's no urgent need to do it here in the
-    // server also.  Removing the debugging since it's intrusive.
+function setRemoteAddr(c, req) {
+    c.dj.remoteAddr =
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 }
 
-function greeting(ws) {
+function probeClient(c, msg) {
+    // Set some of our client attributes to the websocket object for
+    // tracking internally
+    if (typeof msg.channel !== "undefined") {
+        c.dj.channel = msg.channel;
+    }
+
+    if (typeof msg.serverid !== "undefined") {
+        c.dj.serverid = msg.serverid;
+    }
+
+    if (typeof msg.enabled !== "undefined") {
+        c.dj.enabled = msg.enabled;
+    }
+
+    if (typeof msg.mode !== "undefined") {
+        c.dj.mode = msg.mode;
+    }
+
+    if (typeof msg.version !== "undefined") {
+        c.dj.version = msg.version;
+    }
+}
+
+function requiredVersion() {
+    myVersion = semver.parse(pjson.version);
+    return util.format("%s.%s.x", myVersion.major, myVersion.minor);
+}
+
+function checkVersion(c) {
+    if (typeof c.dj.version === "undefined") {
+        c.debug("Ignoring client with unknown version");
+        return false;
+    }
+
+    if (!semver.valid(c.dj.version)) {
+        c.debug("Ignoring client with bogus version");
+        return false;
+    }
+
+    if (!semver.satisfies(c.dj.version, requiredVersion())) {
+        // client version does not satisfy requirements
+        reason = util.format(
+            "Upgrade required, server requires version %s",
+            requiredVersion()
+        )
+        reject(c, reason);
+        return false;
+    }
+}
+
+function greeting(c) {
     var msg = new Object();
     msg.action = "CONNECT";
     msg.version = pjson.version;
 
-    ws.send(JSON.stringify(msg));
+    c.send(JSON.stringify(msg));
+}
+
+function reject(c, reason) {
+    var msg = new Object();
+    msg.action = "REJECT";
+    msg.reason = reason;
+    msg.version = pjson.version;
+
+    c.send(JSON.stringify(msg));
+    c.log("Rejected client (%s)", reason);
 }

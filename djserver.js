@@ -72,6 +72,9 @@ function parse_message(data) {
     if (msg.channel == config.get("channel")) {
         console.log("msg.action was '" + msg.action + "'");
         switch (msg.action) {
+            case "REJECT":
+                rejected(msg);
+                break;
             case "PLAYING":
                 slave_track(msg);
                 listeners = 0;
@@ -91,23 +94,14 @@ function parse_message(data) {
     }
 }
 
-function check_version(msg) {
-    if (!semver.valid(msg.version)) {
-        disable("Bogus server version (" + msg.version + ")");
-        return;
-    }
-
-    if (!semver.satisfies(pjson.version, msg.version)) {
-        disable("Needs Upgrade (DJ server is v" + msg.version + ")");
-        return;
-    }
-
+function rejected(msg) {
+    stats.svc.set_status(msg.reason, true);
     return;
 }
 
 function disable(msg) {
-    stats.svc.set_status(msg, true);
     config.set("enabled", false);
+    stats.svc.set_status(msg, true);
     return;
 }
 
@@ -216,7 +210,11 @@ function report_error(text, err, trace) {
 function search_success(title, subtitle, err, r) {
     if (err) {
         console.log("SEARCH_SUCCESS error", err);
-        report_error("search failed", err, {"title": title, "subtitle": subtitle, "r": r});
+        report_error("search failed", err, {
+            title: title,
+            subtitle: subtitle,
+            r: r
+        });
         return;
     }
 
