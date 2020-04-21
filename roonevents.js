@@ -23,11 +23,6 @@ function core_paired(_core) {
 
     transport = core.services.RoonApiTransport;
     transport.subscribe_zones(handler);
-
-    transport.get_zones(function (msg, body) {
-        log.debug("GET_ZONES", body);
-        log.debug("ARRAY", body.zones[1].outputs);
-    });
 }
 
 function normalize(text) {
