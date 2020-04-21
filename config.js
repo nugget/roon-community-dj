@@ -1,4 +1,4 @@
-const uuidv4 = require('uuid/v4');
+const uuidv4 = require("uuid/v4");
 
 //
 // If we failed to load a config from roon.load_config we will populate our
@@ -11,29 +11,31 @@ DefaultConfig = {
     debug: false,
     channel: "chaos",
     enabled: true,
-    serverid: "",
+    serverid: ""
 };
 
 var current = {};
-var debug = false;
+
+function debug() {
+    if (current.debug) {
+        return true;
+    }
+    return false;
+}
 
 function load(roon) {
     console.log("Loading configuration cache");
     current = roon.load_config("settings") || DefaultConfig;
-    debug = current.debug;
-
-    console.log(typeof current.serverid, current.serverid);
 
     if (typeof current.serverid === "undefined" || current.serverid == "") {
         current.serverid = uuidv4();
         console.log("Assigning new serverid", current.serverid);
-
     }
-    console.log("Debugging output is " + debug);
+    console.log("Debugging output is " + debug());
 }
 
 function get(_key) {
-    if (debug) {
+    if (current["debug"]) {
         console.log("config getter for %s returned", _key, current[_key]);
     }
     return current[_key];
@@ -41,7 +43,7 @@ function get(_key) {
 
 function set(_key, value) {
     current[_key] = value;
-    if (debug) {
+    if (current["debug"]) {
         console.log("config setter for %s with ", _key, current[_key]);
     }
 }
@@ -64,9 +66,7 @@ function flag(_key) {
                     return false;
             }
         default:
-            console.log(
-                "Unknown flag type " + _val + " (" + typeof _val + ")"
-            );
+            console.log("Unknown flag type '%s' (%s)", _val, typeof _val);
             return false;
     }
 }
@@ -74,8 +74,7 @@ function flag(_key) {
 function update(_settings) {
     console.log("Updating configuration cache");
     current = _settings;
-    debug = current["debug"];
-    console.log("Debugging output is " + debug);
+    console.log("Debugging output is " + debug());
 }
 
 function all() {
@@ -118,7 +117,10 @@ function layout(settings) {
     l.layout.push({
         type: "dropdown",
         title: "Mode",
-        values: [{title: "DJ", value: "master"}, {title: "Listener", value: "slave"}],
+        values: [
+            { title: "DJ", value: "master" },
+            { title: "Listener", value: "slave" }
+        ],
         setting: "mode"
     });
 
@@ -127,7 +129,6 @@ function layout(settings) {
         title: "channel",
         setting: "channel"
     });
-
 
     l.layout.push({
         type: "group",
@@ -143,11 +144,11 @@ function layout(settings) {
             {
                 type: "string",
                 title: "User ID",
-                setting: "serverid",
+                setting: "serverid"
             }
         ]
     });
-    
+
     return l;
 }
 
@@ -158,4 +159,3 @@ exports.set = set;
 exports.update = update;
 exports.all = all;
 exports.flag = flag;
-exports.debug = debug;

@@ -1,5 +1,6 @@
 var zonedata = require("./zonedata.js"),
     djserver = require("./djserver.js"),
+    log = require("./log.js"),
     config = require("./config.js");
 
 const uuidv4 = require("uuid/v4");
@@ -9,8 +10,8 @@ var roon_zones = {};
 var core, transport;
 
 function ready() {
-    // console.log("READYCHECK", transport);
     if (!transport) {
+        log.trace("READYCHECK not ready");
         return false;
     }
 
@@ -24,10 +25,8 @@ function core_paired(_core) {
     transport.subscribe_zones(handler);
 
     transport.get_zones(function (msg, body) {
-        if (config.debug) {
-            console.log("GET_ZONES", body);
-            console.log("ARRAY", body.zones[1].outputs);
-        }
+        log.debug("GET_ZONES", body);
+        log.debug("ARRAY", body.zones[1].outputs);
     });
 }
 
@@ -36,7 +35,7 @@ function normalize(text) {
 }
 
 function play_track(title, subtitle, album) {
-    console.log("PLAY_TRACK '%s', '%s'", title, subtitle);
+    log.info("PLAY_TRACK '%s', '%s'", title, subtitle);
 
     title = normalize(title);
     subtitle = normalize(subtitle);
@@ -48,7 +47,7 @@ function play_track(title, subtitle, album) {
     // attempt.
     subtitle = subtitle.split(" / ")[0];
 
-    console.log("NORMALIZED '%s', '%s'", title, subtitle);
+    log.info("NORMALIZED '%s', '%s'", title, subtitle);
 
     opts = Object.assign({
         hierarchy: "search",
@@ -56,7 +55,7 @@ function play_track(title, subtitle, album) {
         pop_all: true
     });
 
-    //console.log("PLAY opts", opts);
+    //log.info("PLAY opts", opts);
 
     core.services.RoonApiBrowse.browse(
         opts,
@@ -65,18 +64,25 @@ function play_track(title, subtitle, album) {
 }
 
 function search_loop(title, subtitle, err, r) {
-    console.log("STARTING search_loop for '%s' '%s'", title, subtitle);
-    console.log("R", r);
+    log.info("STARTING search_loop for '%s' '%s'", title, subtitle);
+    log.debug("R", r);
 
     if (err) {
-        console.log("SEARCH_LOOP ERROR", err, r);
-        djserver.report_error("search failed", err, {"title": title, "subtitle": subtitle, "r": r});
+        log.error("SEARCH_LOOP ERROR", err, r);
+        djserver.report_error("search failed", err, {
+            title: title,
+            subtitle: subtitle,
+            r: r
+        });
         return;
     }
 
     if (r.action == "message") {
-        // This is never good
-        console.log("****",r.message, r.is_error);
+        if (r.is_error) {
+            log.error("Message from search api: %s", r.message);
+        } else {
+            log.info("Message from search api: %s", r.message);
+        }
         return;
     }
 
@@ -86,7 +92,7 @@ function search_loop(title, subtitle, err, r) {
         // an immediate load() with the same hierarchy as our search and we'll
         // get the actual results.  This is the least ambiguous result we can
         // see from the API.
-        console.log("list detected, requesting load()");
+        log.debug("list detected, requesting load()");
         core.services.RoonApiBrowse.load(
             { hierarchy: "search" },
             search_loop.bind(null, title, subtitle)
@@ -99,10 +105,10 @@ function search_loop(title, subtitle, err, r) {
     // down to just tracks.  If there's an item here titled "Tracks" and our
     // list title is "Search" then we want to hit that button straight away
     if (r.list.title === "Search") {
-        console.log("title is 'search', looking for a tracks item");
+        log.debug("title is 'search', looking for a tracks item");
         for (var obj of r.items) {
             if (obj.title == "Tracks" && obj.hint == "list") {
-                console.log("limiting our search to just tracks");
+                log.info("limiting our search to just tracks");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
@@ -116,7 +122,7 @@ function search_loop(title, subtitle, err, r) {
     // to find our song!  This is where we should place the most clever
     // matching logic.
     if (r.list.title === "Tracks") {
-        console.log(
+        log.debug(
             "search has given us a list of tracks (%s)",
             r.list.subtitle
         );
@@ -124,7 +130,7 @@ function search_loop(title, subtitle, err, r) {
         for (var obj of r.items) {
             if (obj.title == title && obj.subtitle.startsWith(subtitle)) {
                 // I think this is our song!
-                console.log("I think I got a good hit on our song");
+                log.debug("I think I got a good hit on our song");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
@@ -136,11 +142,11 @@ function search_loop(title, subtitle, err, r) {
 
     // Is there a play button for us?
     if (r.list.hint == "action_list") {
-        console.log("It's an action list");
+        log.debug("It's an action list");
         for (var obj of r.items) {
-            console.log("OBJ", obj);
+            log.debug("OBJ", obj);
             if (obj.title == "Play Now" && obj.hint == "action") {
-                console.log("PLAYNOW HIT", obj.title, obj.item_key);
+                log.debug("PLAYNOW HIT", obj.title, obj.item_key);
                 core.services.RoonApiBrowse.browse(
                     {
                         hierarchy: "search",
@@ -158,7 +164,7 @@ function search_loop(title, subtitle, err, r) {
         // This coult be improved.  We want the best match not just the first
         // match, but it's unclear exactly how we should do that or if there's
         // a big benefit to trying to be clever here.  Revisit later.
-        console.log("this is our guy!  tell me what to do");
+        log.debug("this is our guy!  tell me what to do");
 
         core.services.RoonApiBrowse.browse(
             { hierarchy: "search", item_key: r.items[0].item_key },
@@ -167,7 +173,7 @@ function search_loop(title, subtitle, err, r) {
         return;
     }
 
-    console.log("WARNING I have an unexpected result here");
+    log.warn("unexpected result from search api", R);
 }
 
 function handler(cmd, data) {
@@ -183,9 +189,7 @@ function handler(cmd, data) {
                     zonename = zonename.replace(/ \+.*/, "");
                     roon_zones[zonename] = JSON.parse(JSON.stringify(zd));
 
-                    if (config.debug) {
-                        console.log("PLAYING", zd);
-                    }
+                    log.debug("zone event", zd);
 
                     if (typeof zd.state !== "undefined") {
                         switch (zd.state) {
@@ -200,7 +204,7 @@ function handler(cmd, data) {
                                 stopped_handler(zd);
                                 break;
                             default:
-                                console.log("UNKNOWN zone state: " + zd.state);
+                                log.warn("UNKNOWN zone state: %s", zd.state);
                                 stopped_handler();
                         }
                     }
@@ -212,7 +216,7 @@ function handler(cmd, data) {
 
 function playing_handler(zd) {
     if (!config.flag("enabled")) {
-        console.log("extension is disabled");
+        log.info("extension is disabled");
         return;
     }
 
@@ -224,7 +228,7 @@ function playing_handler(zd) {
             // This is a song playing in the configured DJ Zone
             djserver.announce_play(zd);
         } else {
-            console.log(
+            log.info(
                 "Mismatched zone",
                 val.output_id,
                 config.get("djzone").output_id
@@ -237,14 +241,7 @@ function stopped_handler(zd) {}
 
 function core_unpaired(_core) {
     core = _core;
-
-    console.log(
-        core.core_id,
-        core.display_name,
-        core.display_version,
-        "-",
-        "LOST"
-    );
+    log.warn("Roon core unpaired", core);
 }
 
 exports.core_paired = core_paired;

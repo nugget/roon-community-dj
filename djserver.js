@@ -2,6 +2,7 @@ var zonedata = require("./zonedata.js"),
     roonevents = require("./roonevents.js"),
     config = require("./config.js"),
     stats = require("./status.js"),
+    log = require("./log.js"),
     pjson = require("./package.json");
 
 const semver = require("semver");
@@ -14,7 +15,7 @@ var listeners = 0;
 
 function connect() {
     var url = config.get("server");
-    console.log("Connecting to %s", url);
+    log.info("Connecting to %s", url);
 
     ws = new WebSocket(url);
 
@@ -23,21 +24,21 @@ function connect() {
     });
 
     ws.on("open", () => {
-        console.log("Connected to djserver");
+        log.info("Connected to djserver");
         stats.svc.set_status("Connected to DJserver", false);
         announce();
     });
 
     //ws.on("json", data => {
-    //    console.log("JSON FROM SERVER", data);
+    //    log.info("JSON FROM SERVER", data);
     //});
 
     ws.on("close", () => {
-        console.log("djserver Connection Closed");
+        log.info("djserver Connection Closed");
     });
 
     ws.on("websocket-status", status => {
-        console.log("WSSTATUS", status);
+        log.info("WSSTATUS", status);
         if (status.indexOf("Error") > -1) {
             stats.svc.set_status(status, true);
         }
@@ -46,7 +47,7 @@ function connect() {
 
 function reconnectIfNeeded() {
     if (config.get("server") != ws.address) {
-        console.log("Recycling connection to DJ Server");
+        log.info("Recycling connection to DJ Server");
         ws.close();
         set_status("Reconnecting", false);
         connect();
@@ -54,12 +55,12 @@ function reconnectIfNeeded() {
 }
 
 function parse_message(data) {
-    console.log("WSMESSAGE", data);
+    log.info("WSMESSAGE", data);
 
     try {
         var msg = JSON.parse(data);
     } catch (e) {
-        console.log("NOT JSON", e);
+        log.info("NOT JSON", e);
         return;
     }
 
@@ -67,12 +68,17 @@ function parse_message(data) {
         return;
     }
 
+    // Global message types
+    switch (msg.action) {
+        case "REJECT":
+            rejected(msg);
+            break;
+    }
+
+    // Channel specific message types
     if (msg.channel == config.get("channel")) {
-        console.log("msg.action was '" + msg.action + "'");
+        log.info("msg.action was '" + msg.action + "'");
         switch (msg.action) {
-            case "REJECT":
-                rejected(msg);
-                break;
             case "PLAYING":
                 slave_track(msg);
                 listeners = 0;
@@ -84,7 +90,7 @@ function parse_message(data) {
                 poll_response(msg);
                 break;
             default:
-                console.log("Unknown message type", msg.action);
+                log.info("Unknown message type", msg.action);
                 break;
         }
 
@@ -93,6 +99,7 @@ function parse_message(data) {
 }
 
 function rejected(msg) {
+    log.error("Rejected by server (%s)", msg.reason);
     stats.svc.set_status(msg.reason, true);
     return;
 }
@@ -119,7 +126,7 @@ function set_status() {
     msg += config.get("channel");
     msg += " (" + listeners + " listeners)";
 
-    console.log("set_status", msg);
+    log.info("set_status", msg);
     stats.svc.set_status(msg, false);
 }
 
@@ -128,7 +135,7 @@ function slave_track(track) {
         roonevents.play_track(track.title, track.subtitle);
     } else {
         if (config.get("serverid") != track.serverid) {
-            console.log("NEW MASTER DETECTED");
+            log.info("NEW MASTER DETECTED");
             config.set("mode", "slave");
             roonevents.play_track(track.title, track.subtitle);
         }
@@ -162,11 +169,11 @@ function announce_play(data) {
     }
 
     if (data.now_playing.seek_position > 10) {
-        console.log("Not announcing in-progress playback");
+        log.info("Not announcing in-progress playback");
         return;
     }
 
-    console.log("ANNOUNCE", data);
+    log.debug("ANNOUNCE", data);
 
     var msg = new Object();
 
@@ -187,7 +194,7 @@ function announce_play(data) {
     msg.length = data.now_playing.length;
 
     ws.send(JSON.stringify(msg));
-
+    log.info("Announced playback of %s - %s", msg.title, msg.subtitle);
     set_status();
 }
 
@@ -207,7 +214,7 @@ function report_error(text, err, trace) {
 
 function search_success(title, subtitle, err, r) {
     if (err) {
-        console.log("SEARCH_SUCCESS error", err);
+        log.info("SEARCH_SUCCESS error", err);
         report_error("search failed", err, {
             title: title,
             subtitle: subtitle,
