@@ -76,8 +76,6 @@ wss.on("connection", function connection(ws, req) {
             ws.dj.mode = msg.mode;
         }
 
-        log("ws.dj is ", ws.dj);
-
         checkVersion(msg);
 
         // console.log(ws);
