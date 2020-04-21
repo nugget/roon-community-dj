@@ -1,0 +1,75 @@
+#!/bin/sh
+#
+# This is a FreeBSD rc.d script which can properly start/stop/etc a DJserver
+# process on a FreeBSD system.  Requires tmux on the host.
+#
+# PROVIDE: djserver
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+#
+# rc.conf variables:
+# djserver_enable (Default: NO)
+. /etc/rc.subr
+
+name=djserver
+rcvar=djserver_enable
+desc="Roon Community DJ Reflector Server"
+server_dir=/home/djserver/roon-community-dj
+
+load_rc_config $name
+
+extra_commands="console status update"
+start_cmd="${name}_start"
+stop_cmd="${name}_stop"
+console_cmd="${name}_console"
+status_cmd="${name}_status"
+update_cmd="${name}_update"
+
+is_running()
+{
+	pgrep -qu djserver -f "node server.js"
+	return $?
+}
+
+djserver_start()
+{
+	if is_running; then
+echo "${name} is already running."
+	else
+		echo "Starting ${name}."
+		cd ${server_dir}
+		echo su djserver -c "/usr/local/bin/tmux new-session -s ${name} -d '/usr/local/bin/node server.js'"
+		su djserver -c "/usr/local/bin/tmux new-session -s ${name} -d '/usr/local/bin/node server.js'"
+	fi
+}
+
+djserver_console()
+{
+	if ! is_running; then
+		echo "${name} is not running."
+	else
+		export TERM=xterm
+		su djserver -c "/usr/local/bin/tmux attach-session -t ${name}"
+	fi
+}
+
+djserver_status()
+{
+	if is_running; then
+		echo "${name} is running."
+	else
+		echo "${name} is not running."
+	fi
+}
+
+djserver_stop()
+{
+	if ! is_running; then
+		echo "${name} is not running."
+	else
+		pkill -KILL -u djserver -f "node server.js"
+		echo "${name} has been killed."
+	fi
+}
+
+run_rc_command "$1"
