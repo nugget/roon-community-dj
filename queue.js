@@ -1,8 +1,9 @@
 var WebSocket = require("@oznu/ws-connect");
+var config = require("./config.json");
 
 var serverid = "devserver";
 
-var url = "ws://djserver.nuggethaus.net:4242/";
+var url = config.settings.server;
 console.log("Connecting to %s", url);
 var ws = new WebSocket(url);
 
@@ -22,6 +23,8 @@ rl.on("line", function (line) {
     }
 
     track.serverid = serverid;
+    track.channel = config.settings.channel;
+
     ws.send(JSON.stringify(track));
 });
 
