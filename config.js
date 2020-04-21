@@ -35,16 +35,13 @@ function load(roon) {
 }
 
 function get(_key) {
-    if (current["debug"]) {
-        console.log("config getter for %s returned", _key, current[_key]);
-    }
     return current[_key];
 }
 
 function set(_key, value) {
     current[_key] = value;
     if (current["debug"]) {
-        console.log("config setter for %s with ", _key, current[_key]);
+        console.log("set config value for '%s' with '%s'", _key, current[_key]);
     }
 }
 
