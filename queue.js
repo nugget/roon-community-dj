@@ -15,10 +15,14 @@ var rl = readline.createInterface({
 });
 
 rl.on("line", function (line) {
+    if (line == "") {
+        return;
+    }
+
     try {
         var track = JSON.parse(line);
     } catch (e) {
-        console.log("NOT JSON", e);
+        console.log("INVALID");
         return;
     }
 
