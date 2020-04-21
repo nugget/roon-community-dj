@@ -1,6 +1,8 @@
 var WebSocket = require("@oznu/ws-connect");
 var config = require("./config.json");
 
+var debugFlag = false;
+
 var serverid = "devserver";
 
 var url = config.settings.server;
@@ -22,7 +24,7 @@ rl.on("line", function (line) {
     try {
         var track = JSON.parse(line);
     } catch (e) {
-        console.log("INVALID");
+        console.log("INVALID", e);
         return;
     }
 
@@ -37,14 +39,7 @@ ws.on("open", function open() {
 });
 
 ws.on("message", function incoming(data) {
-    try {
-        var track = JSON.parse(data);
-    } catch (e) {
-        console.log("NOT JSON", e);
-        return;
-    }
-
-    if (track.action == "PLAYING") {
+    if (if debugFlag || track.action == "PLAYING") {
         console.log(data);
     }
 });
