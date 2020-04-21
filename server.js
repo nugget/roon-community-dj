@@ -1,5 +1,7 @@
 var pjson = require("./package.json");
 
+var debug = true;
+
 const semver = require("semver");
 const WebSocket = require("ws");
 
@@ -32,19 +34,21 @@ function log(...args) {
 }
 
 function exit(signal) {
-    log("Exiting on "+signal);
+    log("Exiting on " + signal);
     process.exit();
 }
 
-process.on('SIGTERM', exit);
-process.on('SIGINT', exit);
+process.on("SIGTERM", exit);
+process.on("SIGINT", exit);
 
-log("roon-community-dj server v"+pjson.version+" launching (https://github.com/nugget/roon-community-dj)");
+log(pjson.name + " v" + pjson.version + " launching (" + pjson.homepage + ")");
 
 wss.on("connection", function connection(ws, req) {
-    var remoteAddr = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    var remoteAddr =
+        req.headers["x-forwarded-for"] || req.connection.remoteAddress;
     log("JOIN", remoteAddr);
     greeting(ws);
+    ws.dj = {};
 
     ws.on("message", function incoming(data) {
         try {
@@ -54,18 +58,37 @@ wss.on("connection", function connection(ws, req) {
             return;
         }
 
+        // Set some of our client attributes to the websocket object for
+        // tracking internally
+        if (typeof msg.channel !== "undefined") {
+            ws.dj.channel = msg.channel;
+        }
+
+        if (typeof msg.serverid !== "undefined") {
+            ws.dj.serverid = msg.serverid;
+        }
+
+        log("ws.dj is ", ws.dj);
+
         checkVersion(msg);
+
+        // console.log(ws);
 
         log("MESG", remoteAddr, data);
         wss.clients.forEach(function each(client) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
-                client.send(data);
+                if (
+                    typeof client.dj.channel !== "undefined" &&
+                    client.dj.channel == msg.channel
+                ) {
+                    client.send(data);
+                }
             }
         });
     });
 
     ws.on("close", function close() {
-        log("DROP", remoteAddr);
+        log("DROP", remoteAddr, ws.dj.serverid, ws.dj.channel);
     });
 });
 
@@ -82,4 +105,3 @@ function greeting(ws) {
 
     ws.send(JSON.stringify(msg));
 }
-
