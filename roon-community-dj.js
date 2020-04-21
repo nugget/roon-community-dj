@@ -78,4 +78,3 @@ if (config.flag("enabled")) {
 }
 
 set_core_log_level();
-log.debug("Hello", roon);
