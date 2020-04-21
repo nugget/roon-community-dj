@@ -5,6 +5,7 @@
     "main": "roon-community-dj.js",
     "author": "David McNett",
     "license": "MIT",
+    "homepage": "https://github.com/nugget/roon-community-dj/",
     "engines": {
         "node": ">=12.x"
     },
