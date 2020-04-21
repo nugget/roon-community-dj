@@ -3,7 +3,11 @@
     "version": "0.3.0",
     "description": "Roon Community DJ",
     "main": "roon-community-dj.js",
-    "author": "David McNett",
+    "author": {
+        "name": "David 'nugget' McNet",
+        "email": "nugget@macnugget.org",
+        "url": "https://keybase.io/nugget"
+    },
     "license": "MIT",
     "homepage": "https://github.com/nugget/roon-community-dj/",
     "engines": {

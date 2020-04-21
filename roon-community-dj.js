@@ -3,6 +3,7 @@ var config = require("./config.js"),
     roonevents = require("./roonevents.js"),
     djserver = require("./djserver.js"),
     stats = require("./status.js"),
+    log = require("./log.js"),
     pjson = require("./package.json");
 
 var RoonApi = require("node-roon-api"),
@@ -16,9 +17,9 @@ var roon = new RoonApi({
     extension_id: "org.macnugget.community-dj",
     display_name: "Community DJ",
     display_version: pjson.version,
-    publisher: "Nugget",
-    email: "nugget@macnugget.org",
-    website: "https://github.com/nugget/roon-community-dj",
+    publisher: pjson.author.name,
+    email: pjson.author.email,
+    website: pjson.homepage,
     core_paired: roonevents.core_paired,
     core_unpaired: roonevents.core_unpaired
 });
@@ -59,3 +60,5 @@ if (config.flag("enabled")) {
 } else {
     stats.svc.set_status("Extension disabled", false);
 }
+
+log.debug(roon);
