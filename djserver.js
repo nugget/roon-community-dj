@@ -63,8 +63,6 @@ function parse_message(data) {
         return;
     }
 
-    check_version(msg);
-
     if (!config.flag("enabled")) {
         return;
     }
