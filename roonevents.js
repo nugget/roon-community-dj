@@ -2,7 +2,7 @@ var zonedata = require("./zonedata.js"),
     djserver = require("./djserver.js"),
     config = require("./config.js");
 
-const uuidv4 = require('uuid/v4');
+const uuidv4 = require("uuid/v4");
 
 var roon_zones = {};
 
@@ -36,7 +36,7 @@ function normalize(text) {
 }
 
 function play_track(title, subtitle, album) {
-    console.log("PLAY_TRACKi '%s', '%s'", title, subtitle);
+    console.log("PLAY_TRACK '%s', '%s'", title, subtitle);
 
     title = normalize(title);
     subtitle = normalize(subtitle);
@@ -48,7 +48,7 @@ function play_track(title, subtitle, album) {
     // attempt.
     subtitle = subtitle.split(" / ")[0];
 
-    console.log("NORMALIZED", title, subtitle);
+    console.log("NORMALIZED '%s', '%s'", title, subtitle);
 
     opts = Object.assign({
         hierarchy: "search",
@@ -56,7 +56,7 @@ function play_track(title, subtitle, album) {
         pop_all: true
     });
 
-    console.log("PLAY opts", opts);
+    //console.log("PLAY opts", opts);
 
     core.services.RoonApiBrowse.browse(
         opts,
@@ -65,48 +65,81 @@ function play_track(title, subtitle, album) {
 }
 
 function search_loop(title, subtitle, err, r) {
-    loopid = uuidv4().split("-")[0];
-
-    console.log("STARTING search_loop id", loopid);
-
-    console.log(loopid + " R", r);
+    console.log("STARTING search_loop for '%s' '%s'", title, subtitle);
+    console.log("R", r);
 
     if (err) {
         console.log("SEARCH_LOOP ERROR", err, r);
         return;
     }
 
+    if (r.action == "message") {
+        // This is never good
+        console.log("****",r.message, r.is_error);
+        return;
+    }
+
     if (r.action == "list") {
-        console.log(loopid + " BRANCH action is list");
+        // If action is list then our result has directly followed a search
+        // that we have requested.  All we need to do in this case is send
+        // an immediate load() with the same hierarchy as our search and we'll
+        // get the actual results.  This is the least ambiguous result we can
+        // see from the API.
+        console.log("list detected, requesting load()");
         core.services.RoonApiBrowse.load(
             { hierarchy: "search" },
             search_loop.bind(null, title, subtitle)
         );
-        console.log(loopid + " return 0");
         return;
-    } else if (r.list.title === "Tracks") {
-        console.log(loopid + " BRANCH title is Tracks");
+    }
 
+    // Nexxt up, we want to know if Roon is asking us to limit our search to
+    // only a specific type of item.  In this case, we always want to narrow it
+    // down to just tracks.  If there's an item here titled "Tracks" and our
+    // list title is "Search" then we want to hit that button straight away
+    if (r.list.title === "Search") {
+        console.log("title is 'search', looking for a tracks item");
         for (var obj of r.items) {
-            console.log(loopid + " startswith", obj.subtitle, ":", subtitle);
-            if (obj.subtitle.startsWith(subtitle)) {
-                console.log(loopid + " startswith hit on ", subtitle);
+            if (obj.title == "Tracks" && obj.hint == "list") {
+                console.log("limiting our search to just tracks");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
                     search_loop.bind(null, title, subtitle)
                 );
-                console.log(loopid + " return 1");
                 return;
             }
-        };
-    } else {
-        console.log(loopid + " BRANCH everything else");
+        }
+    }
+
+    // Have we been given a list of tracks to search?  If so, let's try
+    // to find our song!  This is where we should place the most clever
+    // matching logic.
+    if (r.list.title === "Tracks") {
+        console.log(
+            "search has given us a list of tracks (%s)",
+            r.list.subtitle
+        );
 
         for (var obj of r.items) {
-            console.log(loopid + " OBJ", obj);
+            if (obj.title == title && obj.subtitle.startsWith(subtitle)) {
+                // I think this is our song!
+                console.log("I think I got a good hit on our song");
+                core.services.RoonApiBrowse.browse(
+                    { hierarchy: "search", item_key: obj.item_key },
+                    search_loop.bind(null, title, subtitle)
+                );
+                return;
+            }
+        }
+    }
 
-            if (obj.title == "Play Now") {
-                console.log(loopid + " PLAYNOW HIT", obj.title, obj.item_key);
+    // Is there a play button for us?
+    if (r.list.hint == "action_list") {
+        console.log("It's an action list");
+        for (var obj of r.items) {
+            console.log("OBJ", obj);
+            if (obj.title == "Play Now" && obj.hint == "action") {
+                console.log("PLAYNOW HIT", obj.title, obj.item_key);
                 core.services.RoonApiBrowse.browse(
                     {
                         hierarchy: "search",
@@ -115,30 +148,25 @@ function search_loop(title, subtitle, err, r) {
                     },
                     djserver.search_success.bind(null, title, subtitle)
                 );
-                console.log(loopid + " return 2");
-                return;
-            } else if (obj.title == "Tracks") {
-                console.log(loopid + " TRACKS HIT");
-                core.services.RoonApiBrowse.browse(
-                    { hierarchy: "search", item_key: obj.item_key },
-                    search_loop.bind(null, title, subtitle)
-                );
-                console.log(loopid + " return 4");
-                return;
-            } else if (
-                obj.title == title &&
-                obj.subtitle.startsWith(subtitle)
-            ) {
-                console.log(loopid + " TITLE HIT");
-                core.services.RoonApiBrowse.browse(
-                    { hierarchy: "search", item_key: obj.item_key },
-                    search_loop.bind(null, title, subtitle)
-                );
-                console.log(loopid + " return 3");
                 return;
             }
         }
     }
+
+    if (r.list.title === title && r.list.subtitle.startsWith(subtitle)) {
+        // This coult be improved.  We want the best match not just the first
+        // match, but it's unclear exactly how we should do that or if there's
+        // a big benefit to trying to be clever here.  Revisit later.
+        console.log("this is our guy!  tell me what to do");
+
+        core.services.RoonApiBrowse.browse(
+            { hierarchy: "search", item_key: r.items[0].item_key },
+            search_loop.bind(null, title, subtitle)
+        );
+        return;
+    }
+
+    console.log("WARNING I have an unexpected result here");
 }
 
 function handler(cmd, data) {
