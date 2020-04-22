@@ -92,9 +92,9 @@ function setServerState(line) {
 }
 
 function setServerVersion(ok, version) {
-    serverVersion = util.format("DJ server is version %s", version);
+    serverVersion = util.format("DJ server is v%s", version);
     if (!ok) {
-        serverVersion += " ** Please consider upgrading";
+        serverVersion += " ** Please upgrade";
     }
 }
 
