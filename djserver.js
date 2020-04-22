@@ -117,7 +117,7 @@ function check_version(msg) {
     if (!semver.valid(msg.version)) {
         log.error("Server reports a bogus version (%s)", msg.version);
     } else {
-        if (!semver.satisfies(pjson.version, msg.version)) {
+        if (semver.gt(msg.version, pjson.version)) {
             log.warn(
                 "Please consider upgrading.  You are v%s and the server is v%s",
                 pjson.version,
