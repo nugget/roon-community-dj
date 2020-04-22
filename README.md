@@ -40,8 +40,8 @@ You can also visit the [related thread] on the Roon community discussion forums
 Assuming you have a working `node` and `npm` installed on your host, it's
 simply a matter of:
 
-```
-git clone git@github.com:nugget/roon-community-dj.git
+```sh
+git clone https://github.com/nugget/roon-community-dj.git
 cd roon-community-dj
 npm install
 node roon-community-dj.js
