@@ -169,6 +169,9 @@ function search_loop(title, subtitle, err, r) {
     }
 
     log.warn("unexpected result from search api", r);
+    log.info(
+        "This usually means that the DJ has played a track we don't have"
+    );
 }
 
 function handler(cmd, data) {
