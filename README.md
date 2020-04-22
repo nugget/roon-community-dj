@@ -1,6 +1,6 @@
 # Roon Community DJ
 
-[![Version npm](https://img.shields.io/npm/v/roon-community-dj.svg?logo=npm)](https://www.npmjs.com/nugget/roon-community-dj) [![CircleCI](https://circleci.com/gh/nugget/roon-community-dj.svg?style=shield)](https://circleci.com/gh/nugget/roon-community-dj) [![Dependency Status](https://david-dm.org/nugget/roon-community-dj/status.svg)](https://david-dm.org/nugget/roon-community-dj) [![devDependency Status](https://david-dm.org/nugget/roon-community-dj/dev-status.svg)](https://david-dm.org/nugget/roon-community-dj?type=dev)
+[![Version npm](https://img.shields.io/npm/v/roon-community-dj.svg?logo=npm)](https://www.npmjs.com/nugget/roon-community-dj) [![Dependency Status](https://david-dm.org/nugget/roon-community-dj/status.svg)](https://david-dm.org/nugget/roon-community-dj) [![devDependency Status](https://david-dm.org/nugget/roon-community-dj/dev-status.svg)](https://david-dm.org/nugget/roon-community-dj?type=dev)
 
 ## What is this?
 
