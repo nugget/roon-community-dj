@@ -1,4 +1,5 @@
 const uuidv4 = require("uuid/v4");
+const util = require("util");
 
 //
 // If we failed to load a config from roon.load_config we will populate our
@@ -16,6 +17,9 @@ DefaultConfig = {
 };
 
 var current = {};
+
+var serverState = "";
+var serverVersion = "";
 
 function debug() {
     if (current.debug) {
@@ -81,6 +85,17 @@ function update(_settings) {
 
 function all() {
     return current;
+}
+
+function setServerState(line) {
+    serverState = line;
+}
+
+function setServerVersion(ok, version) {
+    serverVersion = util.format("DJ server is version %s", version);
+    if (!ok) {
+        serverVersion += " ** Please consider upgrading";
+    }
 }
 
 // https://community.roonlabs.com/t/settings-api-can-make-a-remote-crash/35899/4?u=nugget
@@ -167,6 +182,15 @@ function layout(settings) {
         ]
     });
 
+    l.layout.push({
+        type: "label",
+        title: serverState
+    });
+    l.layout.push({
+        type: "label",
+        title: serverVersion
+    });
+
     return l;
 }
 
@@ -177,3 +201,5 @@ exports.set = set;
 exports.update = update;
 exports.all = all;
 exports.flag = flag;
+exports.setServerState = setServerState;
+exports.setServerVersion = setServerVersion;

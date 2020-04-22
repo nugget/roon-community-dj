@@ -6,6 +6,7 @@ var zonedata = require("./zonedata.js"),
     pjson = require("./package.json");
 
 const semver = require("semver");
+const util = require("util");
 
 var WebSocket = require("@oznu/ws-connect");
 var ws;
@@ -13,9 +14,16 @@ var roon_status = "Initializing";
 
 var listeners = 0;
 
+function setStatus(error, template, ...args) {
+    var msg = util.format(template, ...args);
+    log.info(msg);
+    config.setServerState(msg);
+    stats.svc.set_status(msg, error);
+}
+
 function connect() {
     var url = config.get("server");
-    log.info("Connecting to %s", url);
+    setStatus(false, "Connecting to %s", url);
 
     ws = new WebSocket(url);
 
@@ -24,8 +32,7 @@ function connect() {
     });
 
     ws.on("open", () => {
-        log.info("Connected to djserver");
-        stats.svc.set_status("Connected to DJserver", false);
+        setStatus(false, "Connected to DJserver");
         announce();
     });
 
@@ -34,13 +41,13 @@ function connect() {
     //});
 
     ws.on("close", () => {
-        log.info("djserver Connection Closed");
+        setStatus(false, "DJserver Connection Closed");
     });
 
     ws.on("websocket-status", status => {
         log.info("STATUS", status);
         if (status.indexOf("Error") > -1) {
-            stats.svc.set_status(status, true);
+            setStatus(true, status);
         }
     });
 }
@@ -48,8 +55,8 @@ function connect() {
 function reconnectIfNeeded() {
     if (config.get("server") != ws.address) {
         log.info("Recycling connection to DJ Server");
-        ws.close();
-        set_status("Reconnecting", false);
+        w.close();
+        setStatus(false, "Reconnecting...");
         connect();
     }
 }
@@ -65,6 +72,7 @@ function parse_message(data) {
     }
 
     if (!config.flag("enabled")) {
+        setStatus(false, "Extension disabled");
         return;
     }
 
@@ -72,6 +80,9 @@ function parse_message(data) {
     switch (msg.action) {
         case "REJECT":
             rejected(msg);
+            break;
+        case "CONNECT":
+            check_version(msg);
             break;
     }
 
@@ -89,6 +100,9 @@ function parse_message(data) {
             case "POLL":
                 poll_response(msg);
                 break;
+            case "ANNOUNCE":
+                // Clients don't need to do anything with this right now
+                break;
             default:
                 log.info("Unknown message type", msg.action);
                 break;
@@ -98,21 +112,39 @@ function parse_message(data) {
     }
 }
 
+function check_version(msg) {
+    log.info("CHECK_VERSION", msg);
+    if (!semver.valid(msg.version)) {
+        log.error("Server reports a bogus version (%s)", msg.version);
+    } else {
+        if (!semver.satisfies(pjson.version, msg.version)) {
+            log.warn(
+                "Please consider upgrading.  You are v%s and the server is v%s",
+                pjson.version,
+                msg.version
+            );
+            setStatus(true, "Upgrade recommended. Server is v%s", msg.version);
+            config.setServerVersion(false, msg.version);
+        } else {
+            config.setServerVersion(true, msg.version);
+        }
+    }
+}
+
 function rejected(msg) {
-    log.error("Rejected by server (%s)", msg.reason);
-    stats.svc.set_status(msg.reason, true);
+    setStatus(true, "Rejected by server (%s)", msg.reason);
     return;
 }
 
 function disable(msg) {
     config.set("enabled", false);
-    stats.svc.set_status(msg, true);
+    setStatus(false, "Disabled by server (%s)", msg);
     return;
 }
 
 function set_status() {
     if (!config.flag("enabled")) {
-        stats.svc.set_status("Extension disabled", false);
+        setStatus(false, "Extension disabled");
         return;
     }
 
@@ -129,8 +161,7 @@ function set_status() {
     msg += config.get("channel");
     msg += " (" + listeners + " listeners)";
 
-    log.info("set_status", msg);
-    stats.svc.set_status(msg, false);
+    setStatus(false, msg);
 }
 
 function slave_track(track) {
