@@ -39,7 +39,7 @@ ws.on("open", function open() {
 });
 
 ws.on("message", function incoming(data) {
-    if (if debugFlag || track.action == "PLAYING") {
+    if (debugFlag || data.action == "PLAYING") {
         console.log(data);
     }
 });

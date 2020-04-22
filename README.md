@@ -37,6 +37,22 @@ a suitable node.js/npm setup.
 
 You can also visit the [related thread] on the Roon community discussion forums
 
+Assuming you have a working `node` and `npm` installed on your host, it's
+simply a matter of:
+
+```sh
+git clone https://github.com/nugget/roon-community-dj.git
+cd roon-community-dj
+npm install
+node roon-community-dj.js
+```
+
+Once the extension is running, go to Settings / Extensions in your Roon app.
+Select your playback Zone, choose a channel name to join, and set your
+nickname.
+
+![Example Configuration Screen][configscreen]
+
 ## Architecture and Configuration
 
 Each Roon Core running this extension will connect to a central DJserver which
@@ -93,3 +109,5 @@ The DJserver will absolutely **not** have access to:
 [Roon Discord]: https://discord.gg/4yKPf26
 [Roon Extension Manager]: https://github.com/TheAppgineer/roon-extension-manager/
 [related thread]: https://community.roonlabs.com/t/roon-extension-community-dj/103079?u=nugget
+
+[configscreen]: images/config.png

@@ -11,7 +11,8 @@ DefaultConfig = {
     debug: false,
     channel: "chaos",
     enabled: true,
-    serverid: ""
+    serverid: "",
+    nickname: ""
 };
 
 var current = {};
@@ -41,7 +42,11 @@ function get(_key) {
 function set(_key, value) {
     current[_key] = value;
     if (current["debug"]) {
-        console.log("set config value for '%s' with '%s'", _key, current[_key]);
+        console.log(
+            "set config value for '%s' with '%s'",
+            _key,
+            current[_key]
+        );
     }
 }
 
@@ -100,31 +105,47 @@ function layout(settings) {
     });
 
     l.layout.push({
-        type: "string",
-        title: "Server URL",
-        setting: "server"
+        type: "group",
+        title: "Playback",
+        items: [
+            {
+                type: "zone",
+                title: "Zone",
+                setting: "djzone"
+            },
+            {
+                type: "string",
+                title: "Channel",
+                setting: "channel"
+            },
+            {
+                type: "dropdown",
+                title: "Role",
+                values: [
+                    { title: "DJ", value: "master" },
+                    { title: "Listener", value: "slave" }
+                ],
+                setting: "mode"
+            },
+            {
+                type: "string",
+                title: "Nickname",
+                max_length: 16,
+                setting: "nickname"
+            }
+        ]
     });
 
     l.layout.push({
-        type: "zone",
-        title: "DJ Zone",
-        setting: "djzone"
-    });
-
-    l.layout.push({
-        type: "dropdown",
-        title: "Mode",
-        values: [
-            { title: "DJ", value: "master" },
-            { title: "Listener", value: "slave" }
-        ],
-        setting: "mode"
-    });
-
-    l.layout.push({
-        type: "string",
-        title: "channel",
-        setting: "channel"
+        type: "group",
+        title: "Advanced Settings",
+        items: [
+            {
+                type: "string",
+                title: "DJ Server URL",
+                setting: "server"
+            }
+        ]
     });
 
     l.layout.push({
