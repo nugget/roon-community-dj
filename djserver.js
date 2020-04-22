@@ -121,6 +121,9 @@ function set_status() {
         msg = "DJing in ";
     } else {
         msg = "Listening to ";
+        if (config.get("activedj") !== "") {
+            msg += config.get("activedj") + " in ";
+        }
     }
 
     msg += config.get("channel");
@@ -131,6 +134,8 @@ function set_status() {
 }
 
 function slave_track(track) {
+    config.set("activedj", track.nickname);
+
     if (config.get("mode") == "slave") {
         roonevents.play_track(track.title, track.subtitle);
     } else {
@@ -185,8 +190,9 @@ function announce_play(data) {
         listeners++;
     }
 
-    msg.serverid = config.get("serverid");
     msg.channel = config.get("channel");
+    msg.nickname = config.get("nickname");
+    msg.serverid = config.get("serverid");
     msg.title = data.now_playing.three_line.line1;
     msg.subtitle = data.now_playing.three_line.line2;
     msg.album = data.now_playing.three_line.line3;
