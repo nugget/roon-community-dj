@@ -168,7 +168,7 @@ function search_loop(title, subtitle, err, r) {
         return;
     }
 
-    log.warn("unexpected result from search api", R);
+    log.warn("unexpected result from search api", r);
 }
 
 function handler(cmd, data) {
