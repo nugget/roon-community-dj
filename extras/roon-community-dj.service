@@ -1,0 +1,11 @@
+[Unit]
+Description=NodeJS app - Roon Community DJ
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/path/to/roon-community-dj
+ExecStart=/usr/bin/node roon-community-dj.js
+
+[Install]
+WantedBy=multi-user.target
