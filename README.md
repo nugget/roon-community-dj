@@ -35,6 +35,8 @@ While this will eventually be available in the [Roon Extension Manager], for
 now the only way to use the extension is to run it "by hand" on a system with
 a suitable node.js/npm setup.
 
+You can also visit the [related thread] on the Roon community discussion forums
+
 ## Architecture and Configuration
 
 Each Roon Core running this extension will connect to a central DJserver which
@@ -90,3 +92,4 @@ The DJserver will absolutely **not** have access to:
 [Roon]: https://roonlabs.com/
 [Roon Discord]: https://discord.gg/4yKPf26
 [Roon Extension Manager]: https://github.com/TheAppgineer/roon-extension-manager/
+[related thread]: https://community.roonlabs.com/t/roon-extension-community-dj/103079?u=nugget
