@@ -224,12 +224,12 @@ function report_error(text, err, trace) {
     }
 }
 
-function search_success(title, subtitle, err, r) {
+function search_success(t, err, r) {
     if (err) {
         log.info("SEARCH_SUCCESS error", err);
         report_error("search failed", err, {
-            title: title,
-            subtitle: subtitle,
+            title: t.title,
+            subtitle: t.subtitle,
             r: r
         });
         return;
@@ -240,8 +240,8 @@ function search_success(title, subtitle, err, r) {
         msg.action = "SEARCH_SUCCESS";
         msg.serverid = config.get("serverid");
         msg.channel = config.get("channel");
-        msg.title = title;
-        msg.subtitle = subtitle;
+        msg.title = t.title;
+        msg.subtitle = t.subtitle;
         msg.version = pjson.version;
 
         broadcast(msg);

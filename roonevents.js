@@ -9,6 +9,7 @@ const uuidv4 = require("uuid/v4");
 var roon_zones = {};
 
 var core, transport;
+var current_seek;
 
 function ready() {
     if (!transport) {
@@ -67,16 +68,18 @@ function play_track(t) {
         }
     }
 
+    if (t.seek_position && t.seek_position > 10) {
+        log.info("I'll start the song at %d seconds");
+        current_seek = t.seek_position;
+    }
+
     opts = Object.assign({
         hierarchy: "search",
         input: t.title + " " + t.subtitle,
         pop_all: true
     });
 
-    core.services.RoonApiBrowse.browse(
-        opts,
-        search_loop.bind(null, t)
-    );
+    core.services.RoonApiBrowse.browse(opts, search_loop.bind(null, t));
 }
 
 function search_loop(t, err, r) {
@@ -285,6 +288,14 @@ function announce_play(zd) {
     msg.version = pjson.version;
     msg.length = zd.now_playing.length;
     msg.seek_position = zd.now_playing.seek_position;
+
+    log.warn("Current seek is %d", current_seek);
+    if (current_seek) {
+        log.info("Seeking to %d seconds in the track", current_seek);
+        msg.seek_position = current_seek;
+        transport.seek(zd.zone_id, "absolute", current_seek);
+        current_seek = 0;
+    }
 
     djserver.broadcast(msg);
 
