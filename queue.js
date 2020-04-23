@@ -30,6 +30,7 @@ rl.on("line", function (line) {
 
     track.serverid = serverid;
     track.channel = config.settings.channel;
+    track.nickname = "fakeuser";
 
     ws.send(JSON.stringify(track));
 });
