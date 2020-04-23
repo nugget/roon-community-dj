@@ -196,6 +196,8 @@ function search_loop(t, err, r) {
     log.info(
         "This usually means that the DJ has played a track we don't have"
     );
+
+    announce_notfound(t);
 }
 
 function handler(cmd, data) {
@@ -262,6 +264,23 @@ function playing_handler(zd) {
 function announce_nowplaying() {
     let zd = transport.zone_by_output_id(config.get("djzone").output_id);
     announce_play(zd);
+}
+
+function announce_notfound(t) {
+    if (!config.flag("enabled")) {
+        return;
+    }
+
+    var msg = new Object();
+    msg.action = "NOTFOUND";
+    msg.channel = config.get("channel");
+    msg.nickname = config.get("nickname");
+    msg.serverid = config.get("serverid");
+    msg.title = t.title;
+    msg.subtitle = t.subtitle;
+    msg.version = pjson.version;
+
+    djserver.broadcast(msg);
 }
 
 function announce_play(zd) {

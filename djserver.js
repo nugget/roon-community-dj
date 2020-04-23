@@ -192,10 +192,8 @@ function announce() {
 }
 
 function process_announce(msg) {
-    log.info("process_announce");
     log.info(config.get("mode"));
     if (config.get("mode") == "master") {
-        log.info("I am master!");
         roonevents.announce_nowplaying();
     }
 }
@@ -235,7 +233,8 @@ function search_success(t, err, r) {
         return;
     }
 
-    if (config.get("mode") == "slave" && config.flag("debug")) {
+    if (false && config.get("mode") == "slave" && config.flag("debug")) {
+        // Disabled this because it isn've very useful any more
         var msg = new Object();
         msg.action = "SEARCH_SUCCESS";
         msg.serverid = config.get("serverid");
