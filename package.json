@@ -1,6 +1,6 @@
 {
     "name": "roon-community-dj",
-    "version": "0.3.5",
+    "version": "0.4.0",
     "description": "Roon Community DJ",
     "main": "roon-community-dj.js",
     "author": {
