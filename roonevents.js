@@ -52,11 +52,18 @@ function play_track(title, subtitle, album) {
 
     log.debug("NORMALIZED '%s', '%s'", title, subtitle);
 
-    let zone = transport.zone_by_output_id(config.get("djzone").output_id)
+    let zone = transport.zone_by_output_id(config.get("djzone").output_id);
 
-    if (track_match({"title": zone.now_playing.three_line.line1, "subtitle": zone.now_playing.three_line.line2}, {"title": title, "subtitle": subtitle})) {
-        log.info("Not playing this song, it's already playing");
-        return;
+    if (typeof zone.now_playing !== "undefined") {
+        var np = {
+            title: zone.now_playing.three_line.line1,
+            subtitle: zone.now_playing.three_line.line2
+        };
+
+        if (track_match(np, { title: title, subtitle: subtitle })) {
+            log.info("Not playing this song, it's already playing");
+            return;
+        }
     }
 
     opts = Object.assign({
@@ -138,7 +145,7 @@ function search_loop(title, subtitle, err, r) {
         );
 
         for (var obj of r.items) {
-            if (track_match(obj, {"title": title, "subtitle": subtitle})) {
+            if (track_match(obj, { title: title, subtitle: subtitle })) {
                 // I think this is our song!
                 log.debug("I think I got a good hit on our song");
                 core.services.RoonApiBrowse.browse(
@@ -170,7 +177,7 @@ function search_loop(title, subtitle, err, r) {
         }
     }
 
-    if (track_match(r.list, {"title": title, "subtitle": subtitle})) {
+    if (track_match(r.list, { title: title, subtitle: subtitle })) {
         // This coult be improved.  We want the best match not just the first
         // match, but it's unclear exactly how we should do that or if there's
         // a big benefit to trying to be clever here.  Revisit later.
