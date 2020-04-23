@@ -88,11 +88,10 @@ function parse_message(data) {
 
     // Channel specific message types
     if (msg.channel == config.get("channel")) {
-        log.info("msg.action was '" + msg.action + "'");
+        log.debug("msg.action was '" + msg.action + "'");
         switch (msg.action) {
             case "PLAYING":
                 slave_track(msg);
-                listeners = 0;
                 break;
             case "SLAVE":
                 listeners++;
@@ -101,7 +100,7 @@ function parse_message(data) {
                 poll_response(msg);
                 break;
             case "ANNOUNCE":
-                // Clients don't need to do anything with this right now
+                process_announce(msg);
                 break;
             default:
                 log.info("Unknown message type", msg.action);
@@ -167,13 +166,18 @@ function set_status() {
 function slave_track(track) {
     config.set("activedj", track.nickname);
 
+    if (track.seek_position < 10) { 
+        // We only want to reset the listener count if this is a fresh play
+        listeners = 0;
+    }
+
     if (config.get("mode") == "slave") {
-        roonevents.play_track(track.title, track.subtitle);
+        roonevents.play_track(track);
     } else {
         if (config.get("serverid") != track.serverid) {
             log.info("NEW MASTER DETECTED");
             config.set("mode", "slave");
-            roonevents.play_track(track.title, track.subtitle);
+            roonevents.play_track(track);
         }
     }
 }
@@ -181,13 +185,21 @@ function slave_track(track) {
 function announce() {
     var msg = new Object();
     msg.action = "ANNOUNCE";
-    msg.serverid = config.get("serverid");
     msg.channel = config.get("channel");
+    msg.nickname = config.get("nickname");
+    msg.serverid = config.get("serverid");
     msg.version = pjson.version;
     msg.mode = config.get("mode");
     msg.enabled = config.flag("enabled");
 
-    ws.send(JSON.stringify(msg));
+    broadcast(msg);
+}
+
+function process_announce(msg) {
+    log.info(config.get("mode"));
+    if (config.get("mode") == "master") {
+        roonevents.announce_nowplaying();
+    }
 }
 
 function poll_response(track) {
@@ -196,45 +208,9 @@ function poll_response(track) {
     msg.serverid = config.get("serverid");
     msg.channel = config.get("channel");
 
-    ws.send(JSON.stringify(msg));
+    broadcast(msg);
 }
 
-function announce_play(data) {
-    if (!config.flag("enabled")) {
-        return;
-    }
-
-    if (data.now_playing.seek_position > 10) {
-        log.info("Not announcing in-progress playback");
-        return;
-    }
-
-    log.debug("ANNOUNCE", data);
-
-    var msg = new Object();
-
-    if (config.get("mode") == "master") {
-        msg.action = "PLAYING";
-        listeners = 0;
-    } else {
-        msg.action = "SLAVE";
-        listeners++;
-    }
-
-    msg.channel = config.get("channel");
-    msg.nickname = config.get("nickname");
-    msg.serverid = config.get("serverid");
-    msg.title = data.now_playing.three_line.line1;
-    msg.subtitle = data.now_playing.three_line.line2;
-    msg.album = data.now_playing.three_line.line3;
-    msg.version = pjson.version;
-    msg.length = data.now_playing.length;
-    msg.seek_position = data.now_playing.seek_position;
-
-    ws.send(JSON.stringify(msg));
-    log.info("Announced playback of '%s - %s'", msg.title, msg.subtitle);
-    set_status();
-}
 
 function report_error(text, err, trace) {
     if (config.flag("debug")) {
@@ -246,35 +222,40 @@ function report_error(text, err, trace) {
         msg.errtext = err;
         msg.trace = trace;
 
-        ws.send(JSON.stringify(msg));
+        broadcast(msg);
     }
 }
 
-function search_success(title, subtitle, err, r) {
+function search_success(t, err, r) {
     if (err) {
         log.info("SEARCH_SUCCESS error", err);
         report_error("search failed", err, {
-            title: title,
-            subtitle: subtitle,
+            title: t.title,
+            subtitle: t.subtitle,
             r: r
         });
         return;
     }
 
-    if (config.get("mode") == "slave" && config.flag("debug")) {
+    if (false && config.get("mode") == "slave" && config.flag("debug")) {
+        // Disabled this because it isn've very useful any more
         var msg = new Object();
         msg.action = "SEARCH_SUCCESS";
         msg.serverid = config.get("serverid");
         msg.channel = config.get("channel");
-        msg.title = title;
-        msg.subtitle = subtitle;
+        msg.title = t.title;
+        msg.subtitle = t.subtitle;
         msg.version = pjson.version;
 
-        ws.send(JSON.stringify(msg));
+        broadcast(msg);
     }
 }
 
-exports.announce_play = announce_play;
+function broadcast(msg) {
+    ws.send(JSON.stringify(msg));
+}
+
+exports.broadcast = broadcast;
 exports.search_success = search_success;
 exports.connect = connect;
 exports.reconnectIfNeeded = reconnectIfNeeded;

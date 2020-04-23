@@ -1,13 +1,15 @@
 var zonedata = require("./zonedata.js"),
     djserver = require("./djserver.js"),
     log = require("./log.js"),
-    config = require("./config.js");
+    config = require("./config.js"),
+    pjson = require("./package.json");
 
 const uuidv4 = require("uuid/v4");
 
 var roon_zones = {};
 
 var core, transport;
+var current_seek;
 
 function ready() {
     if (!transport) {
@@ -37,20 +39,20 @@ function normalize(text) {
     return text;
 }
 
-function play_track(title, subtitle, album) {
-    log.info("PLAY_TRACK '%s', '%s'", title, subtitle);
+function play_track(t) {
+    log.info("PLAY_TRACK '%s', '%s'", t.title, t.subtitle);
 
-    title = normalize(title);
-    subtitle = normalize(subtitle);
+    t.title = normalize(t.title);
+    t.subtitle = normalize(t.subtitle);
     // We have troubles because Roon loves to emit multi-artist subtitles
     // separated with the slash character.  But in searches it expects comma
     // seperated artits.  We punt and just strip off all but the primary artist
     // for our search.  It might be that we want to replace() the slash with
     // a comma, but this seems like a more resilient strategy as a first
     // attempt.
-    subtitle = subtitle.split(" / ")[0];
+    t.subtitle = t.subtitle.split(" / ")[0];
 
-    log.debug("NORMALIZED '%s', '%s'", title, subtitle);
+    log.debug("NORMALIZED '%s', '%s'", t.title, t.subtitle);
 
     let zone = transport.zone_by_output_id(config.get("djzone").output_id);
 
@@ -60,35 +62,35 @@ function play_track(title, subtitle, album) {
             subtitle: zone.now_playing.three_line.line2
         };
 
-        if (track_match(np, { title: title, subtitle: subtitle })) {
+        if (track_match(np, t)) {
             log.info("Not playing this song, it's already playing");
             return;
         }
     }
 
+    if (t.seek_position && t.seek_position > 10) {
+        log.info("I'll start the song at %d seconds");
+        current_seek = t.seek_position;
+    }
+
     opts = Object.assign({
         hierarchy: "search",
-        input: title + " " + subtitle,
+        input: t.title + " " + t.subtitle,
         pop_all: true
     });
 
-    //log.info("PLAY opts", opts);
-
-    core.services.RoonApiBrowse.browse(
-        opts,
-        search_loop.bind(null, title, subtitle)
-    );
+    core.services.RoonApiBrowse.browse(opts, search_loop.bind(null, t));
 }
 
-function search_loop(title, subtitle, err, r) {
-    log.info("STARTING search_loop for '%s' '%s'", title, subtitle);
+function search_loop(t, err, r) {
+    log.info("STARTING search_loop for '%s' '%s'", t.title, t.subtitle);
     log.debug("R", r);
 
     if (err) {
         log.error("SEARCH_LOOP ERROR", err, r);
         djserver.report_error("search failed", err, {
-            title: title,
-            subtitle: subtitle,
+            title: t.title,
+            subtitle: t.subtitle,
             r: r
         });
         return;
@@ -112,7 +114,7 @@ function search_loop(title, subtitle, err, r) {
         log.debug("list detected, requesting load()");
         core.services.RoonApiBrowse.load(
             { hierarchy: "search" },
-            search_loop.bind(null, title, subtitle)
+            search_loop.bind(null, t)
         );
         return;
     }
@@ -128,7 +130,7 @@ function search_loop(title, subtitle, err, r) {
                 log.info("limiting our search to just tracks");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
-                    search_loop.bind(null, title, subtitle)
+                    search_loop.bind(null, t)
                 );
                 return;
             }
@@ -145,12 +147,12 @@ function search_loop(title, subtitle, err, r) {
         );
 
         for (var obj of r.items) {
-            if (track_match(obj, { title: title, subtitle: subtitle })) {
+            if (track_match(obj, t)) {
                 // I think this is our song!
                 log.debug("I think I got a good hit on our song");
                 core.services.RoonApiBrowse.browse(
                     { hierarchy: "search", item_key: obj.item_key },
-                    search_loop.bind(null, title, subtitle)
+                    search_loop.bind(null, t)
                 );
                 return;
             }
@@ -170,14 +172,14 @@ function search_loop(title, subtitle, err, r) {
                         item_key: obj.item_key,
                         zone_or_output_id: config.get("djzone").output_id
                     },
-                    djserver.search_success.bind(null, title, subtitle)
+                    djserver.search_success.bind(null, t)
                 );
                 return;
             }
         }
     }
 
-    if (track_match(r.list, { title: title, subtitle: subtitle })) {
+    if (track_match(r.list, t)) {
         // This coult be improved.  We want the best match not just the first
         // match, but it's unclear exactly how we should do that or if there's
         // a big benefit to trying to be clever here.  Revisit later.
@@ -185,7 +187,7 @@ function search_loop(title, subtitle, err, r) {
 
         core.services.RoonApiBrowse.browse(
             { hierarchy: "search", item_key: r.items[0].item_key },
-            search_loop.bind(null, title, subtitle)
+            search_loop.bind(null, t)
         );
         return;
     }
@@ -194,6 +196,8 @@ function search_loop(title, subtitle, err, r) {
     log.info(
         "This usually means that the DJ has played a track we don't have"
     );
+
+    announce_notfound(t);
 }
 
 function handler(cmd, data) {
@@ -246,7 +250,7 @@ function playing_handler(zd) {
         var val = o[key];
         if (val.output_id == config.get("djzone").output_id) {
             // This is a song playing in the configured DJ Zone
-            djserver.announce_play(zd);
+            announce_play(zd);
         } else {
             log.info(
                 "Mismatched zone",
@@ -255,6 +259,67 @@ function playing_handler(zd) {
             );
         }
     });
+}
+
+function announce_nowplaying() {
+    let zd = transport.zone_by_output_id(config.get("djzone").output_id);
+    announce_play(zd);
+}
+
+function announce_notfound(t) {
+    if (!config.flag("enabled")) {
+        return;
+    }
+
+    var msg = new Object();
+    msg.action = "NOTFOUND";
+    msg.channel = config.get("channel");
+    msg.nickname = config.get("nickname");
+    msg.serverid = config.get("serverid");
+    msg.title = t.title;
+    msg.subtitle = t.subtitle;
+    msg.version = pjson.version;
+
+    djserver.broadcast(msg);
+}
+
+function announce_play(zd) {
+    if (!config.flag("enabled")) {
+        return;
+    }
+
+    log.debug("ANNOUNCE_PLAY", zd);
+
+    var msg = new Object();
+
+    if (config.get("mode") == "master") {
+        msg.action = "PLAYING";
+    } else {
+        msg.action = "SLAVE";
+    }
+
+    msg.channel = config.get("channel");
+    msg.nickname = config.get("nickname");
+    msg.serverid = config.get("serverid");
+    msg.title = zd.now_playing.three_line.line1;
+    msg.subtitle = zd.now_playing.three_line.line2;
+    msg.album = zd.now_playing.three_line.line3;
+    msg.version = pjson.version;
+    msg.length = zd.now_playing.length;
+    msg.seek_position = zd.now_playing.seek_position;
+
+    log.warn("Current seek is %d", current_seek);
+    if (current_seek) {
+        log.info("Seeking to %d seconds in the track", current_seek);
+        msg.seek_position = current_seek;
+        transport.seek(zd.zone_id, "absolute", current_seek);
+        current_seek = 0;
+    }
+
+    djserver.broadcast(msg);
+
+    log.info("Announced playback of '%s - %s'", msg.title, msg.subtitle);
+    djserver.set_status();
 }
 
 function stopped_handler(zd) {}
@@ -267,3 +332,5 @@ function core_unpaired(_core) {
 exports.core_paired = core_paired;
 exports.core_unpaired = core_unpaired;
 exports.play_track = play_track;
+exports.announce_play = announce_play;
+exports.announce_nowplaying = announce_nowplaying;
