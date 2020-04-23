@@ -229,6 +229,7 @@ function announce_play(data) {
     msg.album = data.now_playing.three_line.line3;
     msg.version = pjson.version;
     msg.length = data.now_playing.length;
+    msg.seek_position = data.now_playing.seek_position;
 
     ws.send(JSON.stringify(msg));
     log.info("Announced playback of '%s - %s'", msg.title, msg.subtitle);

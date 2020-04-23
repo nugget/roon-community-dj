@@ -20,9 +20,17 @@ function ready() {
 
 function core_paired(_core) {
     core = _core;
+    log.info("Core Paired");
 
     transport = core.services.RoonApiTransport;
     transport.subscribe_zones(handler);
+}
+
+function track_match(a, b) {
+    if (a.title == b.title && a.subtitle.startsWith(b.subtitle)) {
+        return true;
+    }
+    return false;
 }
 
 function normalize(text) {
@@ -42,7 +50,14 @@ function play_track(title, subtitle, album) {
     // attempt.
     subtitle = subtitle.split(" / ")[0];
 
-    log.info("NORMALIZED '%s', '%s'", title, subtitle);
+    log.debug("NORMALIZED '%s', '%s'", title, subtitle);
+
+    let zone = transport.zone_by_output_id(config.get("djzone").output_id)
+
+    if (track_match({"title": zone.now_playing.three_line.line1, "subtitle": zone.now_playing.three_line.line2}, {"title": title, "subtitle": subtitle})) {
+        log.info("Not playing this song, it's already playing");
+        return;
+    }
 
     opts = Object.assign({
         hierarchy: "search",
@@ -123,7 +138,7 @@ function search_loop(title, subtitle, err, r) {
         );
 
         for (var obj of r.items) {
-            if (obj.title == title && obj.subtitle.startsWith(subtitle)) {
+            if (track_match(obj, {"title": title, "subtitle": subtitle})) {
                 // I think this is our song!
                 log.debug("I think I got a good hit on our song");
                 core.services.RoonApiBrowse.browse(
@@ -155,7 +170,7 @@ function search_loop(title, subtitle, err, r) {
         }
     }
 
-    if (r.list.title === title && r.list.subtitle.startsWith(subtitle)) {
+    if (track_match(r.list, {"title": title, "subtitle": subtitle})) {
         // This coult be improved.  We want the best match not just the first
         // match, but it's unclear exactly how we should do that or if there's
         // a big benefit to trying to be clever here.  Revisit later.
