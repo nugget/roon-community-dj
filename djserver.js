@@ -92,7 +92,6 @@ function parse_message(data) {
         switch (msg.action) {
             case "PLAYING":
                 slave_track(msg);
-                listeners = 0;
                 break;
             case "SLAVE":
                 listeners++;
@@ -166,6 +165,11 @@ function set_status() {
 
 function slave_track(track) {
     config.set("activedj", track.nickname);
+
+    if (track.seek_position < 10) { 
+        // We only want to reset the listener count if this is a fresh play
+        listeners = 0;
+    }
 
     if (config.get("mode") == "slave") {
         roonevents.play_track(track);
