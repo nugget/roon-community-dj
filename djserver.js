@@ -181,8 +181,9 @@ function slave_track(track) {
 function announce() {
     var msg = new Object();
     msg.action = "ANNOUNCE";
-    msg.serverid = config.get("serverid");
     msg.channel = config.get("channel");
+    msg.nickname = config.get("nickname");
+    msg.serverid = config.get("serverid");
     msg.version = pjson.version;
     msg.mode = config.get("mode");
     msg.enabled = config.flag("enabled");
