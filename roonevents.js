@@ -13,7 +13,7 @@ var current_seek;
 
 function ready() {
     if (!transport) {
-        log.trace("READYCHECK not ready");
+        log.info("transport is not ready");
         return false;
     }
 
@@ -40,6 +40,17 @@ function normalize(text) {
 }
 
 function play_track(t) {
+    if (!ready) {
+        return;
+    }
+
+    if (config.get("djzone").output_id == "") {
+        log.warn(
+            "Please choosse an output Zone in the Roon settings extension config"
+        );
+        return;
+    }
+
     log.info("PLAY_TRACK '%s', '%s'", t.title, t.subtitle);
 
     t.title = normalize(t.title);
@@ -54,12 +65,12 @@ function play_track(t) {
 
     log.debug("NORMALIZED '%s', '%s'", t.title, t.subtitle);
 
-    let zone = transport.zone_by_output_id(config.get("djzone").output_id);
+    let zd = transport.zone_by_output_id(config.get("djzone").output_id);
 
-    if (typeof zone.now_playing !== "undefined") {
+    if (typeof zd.now_playing !== "undefined") {
         var np = {
-            title: zone.now_playing.three_line.line1,
-            subtitle: zone.now_playing.three_line.line2
+            title: zd.now_playing.three_line.line1,
+            subtitle: zd.now_playing.three_line.line2
         };
 
         if (track_match(np, t)) {
@@ -262,6 +273,10 @@ function playing_handler(zd) {
 }
 
 function announce_nowplaying() {
+    if (!ready) {
+        return;
+    }
+
     let zd = transport.zone_by_output_id(config.get("djzone").output_id);
     announce_play(zd);
 }
@@ -308,7 +323,7 @@ function announce_play(zd) {
     msg.length = zd.now_playing.length;
     msg.seek_position = zd.now_playing.seek_position;
 
-    log.warn("Current seek is %d", current_seek);
+    log.trace("Current seek is %d", current_seek);
     if (current_seek) {
         log.info("Seeking to %d seconds in the track", current_seek);
         msg.seek_position = current_seek;
