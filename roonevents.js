@@ -328,13 +328,20 @@ function announce_play(zd) {
     if (config.get("mode") == "master") {
         msg.action = "PLAYING";
         if (config.flag("enableradio") && !zd.settings.auto_radio) {
-            transport.change_settings(zd.zone_id, {"auto_radio": true});
+            transport.change_settings(zd.zone_id, { auto_radio: true });
             log.info("Enabled Roon Radio for DJ");
+        }
+
+        if (
+            typeof zd.now_playing.seek_position !== "number" ||
+            zd.now_playing.seek_position <= 1
+        ) {
+            djserver.reset_users();
         }
     } else {
         msg.action = "SLAVE";
         if (config.flag("disableradio") && zd.settings.auto_radio) {
-            transport.change_settings(zd.zone_id, {"auto_radio": false});
+            transport.change_settings(zd.zone_id, { auto_radio: false });
             log.info("Disabled Roon Radio for DJ");
         }
     }
@@ -372,4 +379,4 @@ exports.core_unpaired = core_unpaired;
 exports.play_track = play_track;
 exports.announce_play = announce_play;
 exports.announce_nowplaying = announce_nowplaying;
-exports.skip_track = skip_track
+exports.skip_track = skip_track;

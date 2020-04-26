@@ -94,7 +94,7 @@ function parse_message(data) {
         track_user(msg);
         switch (msg.action) {
             case "PLAYING":
-                if (msg.seek_position <= 1) {
+                if (typeof msg.seek_position !== "number" || msg.seek_position <= 1) {
                     // Only reset users if this is a new song playing
                     reset_users();
                 }
@@ -204,6 +204,7 @@ function reset_users() {
     }
 
     update_user(me);
+    user_stats();
 }
 
 function user_stats() {
@@ -401,3 +402,4 @@ exports.set_status = set_status;
 exports.announce = announce;
 exports.reconnectIfNeeded = reconnectIfNeeded;
 exports.report_error = report_error;
+exports.reset_users = reset_users
