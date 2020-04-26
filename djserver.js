@@ -94,7 +94,7 @@ function parse_message(data) {
         track_user(msg);
         switch (msg.action) {
             case "PLAYING":
-                if (typeof msg.seek_position !== "number" || msg.seek_position <= 1) {
+                if (roonevents.new_song(msg)) {
                     // Only reset users if this is a new song playing
                     reset_users();
                 }
@@ -290,17 +290,15 @@ function track_user(track) {
 }
 
 function slave_track(track) {
-    if (track.seek_position < 10) {
-        // We only want to reset the listener count if this is a fresh play
-    }
-
     if (config.get("mode") == "slave") {
         roonevents.play_track(track);
     } else {
-        if (config.get("serverid") != track.serverid) {
-            log.info("NEW MASTER DETECTED");
-            config.set("mode", "slave");
-            roonevents.play_track(track);
+        if (roonevents.new_song(track)) {
+            if (config.get("serverid") != track.serverid) {
+                log.info("NEW MASTER DETECTED");
+                config.set("mode", "slave");
+                roonevents.play_track(track);
+            }
         }
     }
 }
@@ -349,27 +347,6 @@ function report_error(text, err, trace) {
     }
 }
 
-function search_success(t, err, r) {
-    if (err) {
-        log.info("SEARCH_SUCCESS error", err);
-        report_error("search failed", err, {
-            title: t.title,
-            subtitle: t.subtitle,
-            r: r
-        });
-        return;
-    }
-
-    if (false && config.get("mode") == "slave" && config.flag("debug")) {
-        // Disabled this because it isn've very useful any more
-        var msg = new Object();
-        msg.action = "SEARCH_SUCCESS";
-        msg.title = t.title;
-        msg.subtitle = t.subtitle;
-        broadcast(msg);
-    }
-}
-
 function broadcast(msg) {
     if (!msg.serverid) {
         msg.serverid = config.get("serverid");
@@ -394,7 +371,6 @@ function broadcast(msg) {
 }
 
 exports.broadcast = broadcast;
-exports.search_success = search_success;
 exports.connect = connect;
 exports.reconnectIfNeeded = reconnectIfNeeded;
 exports.roon_status = roon_status;
@@ -402,4 +378,4 @@ exports.set_status = set_status;
 exports.announce = announce;
 exports.reconnectIfNeeded = reconnectIfNeeded;
 exports.report_error = report_error;
-exports.reset_users = reset_users
+exports.reset_users = reset_users;

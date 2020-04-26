@@ -7,9 +7,8 @@ var zonedata = require("./zonedata.js"),
 const uuidv4 = require("uuid/v4");
 
 var roon_zones = {};
-
 var core, transport;
-var current_seek;
+var seek_next_play = 0;
 
 function ready() {
     if (!transport) {
@@ -77,13 +76,6 @@ function play_track(t) {
             log.info("Not playing this song, it's already playing");
             return;
         }
-    }
-
-    if (t.seek_position && t.seek_position > 10) {
-        log.info("I'll start the song at %d seconds");
-        current_seek = t.seek_position;
-    } else {
-        current_seek = 0;
     }
 
     opts = Object.assign({
@@ -202,7 +194,7 @@ function search_loop(t, err, r) {
                         item_key: obj.item_key,
                         zone_or_output_id: config.get("djzone").output_id
                     },
-                    djserver.search_success.bind(null, t)
+                    search_finished.bind(null, t)
                 );
                 return;
             }
@@ -228,6 +220,31 @@ function search_loop(t, err, r) {
     );
 
     announce_notfound(t);
+}
+
+function search_finished(t, err, r) {
+    if (err) {
+        log.info("SEARCH_SUCCESS error", err);
+        report_error("search failed", err, {
+            title: t.title,
+            subtitle: t.subtitle,
+            r: r
+        });
+        return;
+    }
+
+    if (t.seek_position) {
+        seek_next_play = t.seek_position;
+    }
+
+    if (false && config.get("mode") == "slave" && config.flag("debug")) {
+        // Disabled this because it isn've very useful any more
+        var msg = new Object();
+        msg.action = "SEARCH_SUCCESS";
+        msg.title = t.title;
+        msg.subtitle = t.subtitle;
+        broadcast(msg);
+    }
 }
 
 function handler(cmd, data) {
@@ -332,10 +349,7 @@ function announce_play(zd) {
             log.info("Enabled Roon Radio for DJ");
         }
 
-        if (
-            typeof zd.now_playing.seek_position !== "number" ||
-            zd.now_playing.seek_position <= 1
-        ) {
+        if (new_song(zd.now_playing)) {
             djserver.reset_users();
         }
     } else {
@@ -344,20 +358,24 @@ function announce_play(zd) {
             transport.change_settings(zd.zone_id, { auto_radio: false });
             log.info("Disabled Roon Radio for DJ");
         }
+
+        if (seek_next_play) {
+            msg.seek_position = seek_next_play;
+            seek_next_play = 0;
+            let zd = transport.zone_by_output_id(
+                config.get("djzone").output_id
+            );
+            log.info("Seeking to %d seconds in the track", msg.seek_position);
+            transport.seek(zd.zone_id, "absolute", msg.seek_position);
+        }
     }
 
     msg.title = zd.now_playing.three_line.line1;
     msg.subtitle = zd.now_playing.three_line.line2;
     msg.album = zd.now_playing.three_line.line3;
     msg.length = zd.now_playing.length;
-    msg.seek_position = zd.now_playing.seek_position;
-
-    log.trace("Current seek is %d", current_seek);
-    if (current_seek) {
-        log.info("Seeking to %d seconds in the track", current_seek);
-        msg.seek_position = current_seek;
-        transport.seek(zd.zone_id, "absolute", current_seek);
-        current_seek = 0;
+    if (!msg.seek_position) {
+        msg.seek_position = zd.now_playing.seek_position;
     }
 
     djserver.broadcast(msg);
@@ -374,9 +392,17 @@ function core_unpaired(_core) {
     log.warn("Roon core unpaired", core);
 }
 
+function new_song(t) {
+    if (typeof t.seek_position !== "number" || t.seek_position <= 1) {
+        return true;
+    }
+    return false;
+}
+
 exports.core_paired = core_paired;
 exports.core_unpaired = core_unpaired;
 exports.play_track = play_track;
 exports.announce_play = announce_play;
 exports.announce_nowplaying = announce_nowplaying;
 exports.skip_track = skip_track;
+exports.new_song = new_song;
