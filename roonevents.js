@@ -309,8 +309,16 @@ function announce_play(zd) {
 
     if (config.get("mode") == "master") {
         msg.action = "PLAYING";
+        if (config.flag("enableradio") && !zd.settings.auto_radio) {
+            transport.change_settings(zd.zone_id, {"auto_radio": true});
+            log.info("Enabled Roon Radio for DJ");
+        }
     } else {
         msg.action = "SLAVE";
+        if (config.flag("disableradio") && zd.settings.auto_radio) {
+            transport.change_settings(zd.zone_id, {"auto_radio": false});
+            log.info("Disabled Roon Radio for DJ");
+        }
     }
 
     msg.channel = config.get("channel");
@@ -334,6 +342,7 @@ function announce_play(zd) {
     djserver.broadcast(msg);
 
     log.info("Announced playback of '%s - %s'", msg.title, msg.subtitle);
+
     djserver.set_status();
 }
 
