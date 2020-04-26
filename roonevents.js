@@ -93,6 +93,23 @@ function play_track(t) {
     core.services.RoonApiBrowse.browse(opts, search_loop.bind(null, t));
 }
 
+function skip_track() {
+    if (!ready) {
+        return;
+    }
+
+    if (config.get("djzone").output_id == "") {
+        log.warn(
+            "Please choosse an output Zone in the Roon settings extension config"
+        );
+        return;
+    }
+
+    let zd = transport.zone_by_output_id(config.get("djzone").output_id);
+    transport.control(zd.zone_id, "next");
+    log.info("Skipped current track");
+}
+
 function search_loop(t, err, r) {
     log.info("STARTING search_loop for '%s' '%s'", t.title, t.subtitle);
     log.debug("R", r);

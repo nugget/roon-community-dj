@@ -102,6 +102,9 @@ function parse_message(data) {
             case "ANNOUNCE":
                 process_announce(msg);
                 break;
+            case "NOTFOUND":
+                process_notfound(msg);
+                break;
             default:
                 log.info("Unknown message type", msg.action);
                 break;
@@ -199,6 +202,19 @@ function process_announce(msg) {
     log.info(config.get("mode"));
     if (config.get("mode") == "master") {
         roonevents.announce_nowplaying();
+    }
+}
+
+function process_notfound(msg) {
+    if (config.get("mode") == "master") {
+        switch (config.get("notfound")) {
+            case "any":
+                roonevents.skip_track();
+                break;
+            case "all":
+                log.error("Not Implemented: notfound all");
+                break;
+        }
     }
 }
 
