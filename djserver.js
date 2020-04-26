@@ -87,7 +87,7 @@ function parse_message(data) {
     }
 
     // Channel specific message types
-    if (msg.channel.toUpperCase() == config.get("channel").toUpperCase()) {
+    if (msg.channel && msg.channel.toUpperCase() == config.get("channel").toUpperCase()) {
         log.debug("msg.action was '" + msg.action + "'");
         switch (msg.action) {
             case "PLAYING":

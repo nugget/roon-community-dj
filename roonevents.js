@@ -375,3 +375,4 @@ exports.core_unpaired = core_unpaired;
 exports.play_track = play_track;
 exports.announce_play = announce_play;
 exports.announce_nowplaying = announce_nowplaying;
+exports.skip_track = skip_track

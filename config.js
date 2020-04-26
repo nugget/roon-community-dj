@@ -179,8 +179,8 @@ function layout(settings) {
                         value: "any"
                     },
                     {
-                        title: "if ALL listeners fail",
-                        value: "all"
+                        title: "never",
+                        value: "never"
                     }
                 ],
                 setting: "notfound"
