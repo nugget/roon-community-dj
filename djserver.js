@@ -12,7 +12,7 @@ var WebSocket = require("@oznu/ws-connect");
 var ws;
 var roon_status = "Initializing";
 
-var listeners = 0;
+var users = [];
 
 function setStatus(error, template, ...args) {
     var msg = util.format(template, ...args);
@@ -87,14 +87,21 @@ function parse_message(data) {
     }
 
     // Channel specific message types
-    if (msg.channel == config.get("channel")) {
-        log.debug("msg.action was '" + msg.action + "'");
+    if (
+        msg.channel &&
+        msg.channel.toUpperCase() == config.get("channel").toUpperCase()
+    ) {
+        track_user(msg);
         switch (msg.action) {
             case "PLAYING":
+                if (msg.seek_position <= 1) {
+                    // Only reset users if this is a new song playing
+                    reset_users();
+                }
+                track_user(msg);
                 slave_track(msg);
                 break;
             case "SLAVE":
-                listeners++;
                 break;
             case "POLL":
                 poll_response(msg);
@@ -102,11 +109,18 @@ function parse_message(data) {
             case "ANNOUNCE":
                 process_announce(msg);
                 break;
+            case "NOTFOUND":
+                process_notfound(msg);
+                break;
+            case "DROP":
+                forget_user();
+                break;
             default:
                 log.info("Unknown message type", msg.action);
                 break;
         }
 
+        user_stats();
         set_status();
     }
 }
@@ -152,23 +166,131 @@ function set_status() {
         msg = "DJing in ";
     } else {
         msg = "Listening to ";
-        if (config.get("activedj") !== "") {
-            msg += config.get("activedj") + " in ";
-        }
     }
 
-    msg += config.get("channel");
-    msg += " (" + listeners + " listeners)";
+    msg += util.format(
+        "%s in %s (%d listeners)",
+        current_dj(),
+        config.get("channel"),
+        listener_count()
+    );
 
     setStatus(false, msg);
 }
 
-function slave_track(track) {
-    config.set("activedj", track.nickname);
+function reset_users() {
+    log.debug("Restting users object");
 
-    if (track.seek_position < 10) { 
+    var droplist = [];
+
+    for (i = 0; i < users.length; i++) {
+        if (users[i].active) {
+            droplist.push(users[i]);
+        }
+        users[i].active = false;
+    }
+
+    for (var u of droplist) {
+        forget_user(u);
+    }
+
+    var me = {};
+    me.serverid = config.get("serverid");
+    me.nickname = config.get("nickname");
+    if (config.get("mode") == "master") {
+        me.dj = true;
+    } else {
+        me.dj = false;
+    }
+
+    update_user(me);
+}
+
+function user_stats() {
+    log.info("There are %d known users", users.length);
+    console.log(users);
+}
+
+function user_is_known(serverid) {
+    for (var u of users) {
+        if (u.serverid == serverid) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function current_dj() {
+    for (var u of users) {
+        if (u.dj) {
+            return u.nickname;
+        }
+    }
+
+    return "an anonymous dj";
+}
+
+function listener_count() {
+    var c = 0;
+
+    for (var u of users) {
+        if (!u.dj && u.active) {
+            c++;
+        }
+    }
+    return c;
+}
+
+function update_user(u) {
+    u.active = true;
+    for (i = 0; i < users.length; i++) {
+        ul = users[i];
+        if (u.serverid == ul.serverid) {
+            users[i] = { ...users[i], ...u };
+            return;
+        }
+    }
+    users.push(u);
+}
+
+function forget_user(track) {
+    for (i = 0; i < users.length; i++) {
+        ul = users[i];
+        if (track.serverid == ul.serverid) {
+            log.warn(
+                "Dropping %s from userlist (%s)",
+                ul.nickanme,
+                ul.serverid
+            );
+            users.splice(i, 1);
+            return;
+        }
+    }
+}
+
+function track_user(track) {
+    var u = {};
+    u.nickname = track.nickname;
+    u.serverid = track.serverid;
+    if (track.action == "PLAYING" || track.mode == "master") {
+        u.dj = true;
+    } else {
+        u.dj = false;
+    }
+
+    if (track.action == "SLAVE") {
+        u.slave = true;
+    }
+    if (track.action == "NOTFOUND") {
+        u.notfound = true;
+    }
+
+    update_user(u);
+}
+
+function slave_track(track) {
+    if (track.seek_position < 10) {
         // We only want to reset the listener count if this is a fresh play
-        listeners = 0;
     }
 
     if (config.get("mode") == "slave") {
@@ -202,6 +324,19 @@ function process_announce(msg) {
     }
 }
 
+function process_notfound(msg) {
+    if (config.get("mode") == "master") {
+        switch (config.get("notfound")) {
+            case "any":
+                roonevents.skip_track();
+                break;
+            case "all":
+                log.error("Not Implemented: notfound all");
+                break;
+        }
+    }
+}
+
 function poll_response(track) {
     var msg = new Object();
     msg.action = "ROLLCALL";
@@ -210,7 +345,6 @@ function poll_response(track) {
 
     broadcast(msg);
 }
-
 
 function report_error(text, err, trace) {
     if (config.flag("debug")) {

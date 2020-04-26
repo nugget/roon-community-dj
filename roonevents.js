@@ -93,6 +93,23 @@ function play_track(t) {
     core.services.RoonApiBrowse.browse(opts, search_loop.bind(null, t));
 }
 
+function skip_track() {
+    if (!ready) {
+        return;
+    }
+
+    if (config.get("djzone").output_id == "") {
+        log.warn(
+            "Please choosse an output Zone in the Roon settings extension config"
+        );
+        return;
+    }
+
+    let zd = transport.zone_by_output_id(config.get("djzone").output_id);
+    transport.control(zd.zone_id, "next");
+    log.info("Skipped current track");
+}
+
 function search_loop(t, err, r) {
     log.info("STARTING search_loop for '%s' '%s'", t.title, t.subtitle);
     log.debug("R", r);
@@ -278,7 +295,11 @@ function announce_nowplaying() {
     }
 
     let zd = transport.zone_by_output_id(config.get("djzone").output_id);
-    announce_play(zd);
+    if (zd.state == "playing") {
+        announce_play(zd);
+    } else {
+        log.warn("Not announcing the play because we are %s", zd.state);
+    }
 }
 
 function announce_notfound(t) {
@@ -309,8 +330,16 @@ function announce_play(zd) {
 
     if (config.get("mode") == "master") {
         msg.action = "PLAYING";
+        if (config.flag("enableradio") && !zd.settings.auto_radio) {
+            transport.change_settings(zd.zone_id, {"auto_radio": true});
+            log.info("Enabled Roon Radio for DJ");
+        }
     } else {
         msg.action = "SLAVE";
+        if (config.flag("disableradio") && zd.settings.auto_radio) {
+            transport.change_settings(zd.zone_id, {"auto_radio": false});
+            log.info("Disabled Roon Radio for DJ");
+        }
     }
 
     msg.channel = config.get("channel");
@@ -334,6 +363,7 @@ function announce_play(zd) {
     djserver.broadcast(msg);
 
     log.info("Announced playback of '%s - %s'", msg.title, msg.subtitle);
+
     djserver.set_status();
 }
 
@@ -349,3 +379,4 @@ exports.core_unpaired = core_unpaired;
 exports.play_track = play_track;
 exports.announce_play = announce_play;
 exports.announce_nowplaying = announce_nowplaying;
+exports.skip_track = skip_track
