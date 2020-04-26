@@ -104,7 +104,7 @@ wss.on("connection", function connection(ws, req) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 if (
                     typeof client.dj.channel !== "undefined" &&
-                    client.dj.channel == msg.channel
+                    client.dj.channel.toUpperCase() == msg.channel.toUpperCase()
                 ) {
                     client.send(data);
                 }
