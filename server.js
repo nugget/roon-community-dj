@@ -114,10 +114,10 @@ wss.on("connection", function connection(ws, req) {
 
     ws.on("close", function close() {
         var msg = {}
+        msg.action = "DROP";
+        msg.channel = ws.dj.channel;
         msg.nickname = ws.dj.nickname;
         msg.serverid = ws.dj.serverid;
-        msg.channel = ws.dj.channel;
-        msg.action = "DROP";
 
         ws.log("DROP", JSON.stringify(msg));
 
