@@ -295,7 +295,11 @@ function announce_nowplaying() {
     }
 
     let zd = transport.zone_by_output_id(config.get("djzone").output_id);
-    announce_play(zd);
+    if (zd.state == "playing") {
+        announce_play(zd);
+    } else {
+        log.warn("Not announcing the play because we are %s", zd.state);
+    }
 }
 
 function announce_notfound(t) {
