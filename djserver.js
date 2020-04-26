@@ -177,9 +177,21 @@ function set_status() {
 
 function reset_users() {
     log.debug("Restting users object");
-    users = [];
 
-    var me = {}
+    var droplist = [];
+
+    for (i = 0; i < users.length; i++) {
+        if (users[i].active) {
+            droplist.push(users[i]);
+        }
+        users[i].active = false;
+    }
+
+    for (var u of droplist) {
+        forget_user(u);
+    }
+
+    var me = {};
     me.serverid = config.get("serverid");
     me.nickname = config.get("nickname");
     if (config.get("mode") == "master") {
@@ -188,7 +200,7 @@ function reset_users() {
         me.dj = false;
     }
 
-    users.push(me);
+    update_user(me);
 }
 
 function user_stats() {
@@ -219,7 +231,7 @@ function listener_count() {
     var c = 0;
 
     for (var u of users) {
-        if (!u.dj) {
+        if (!u.dj && u.active) {
             c++;
         }
     }
@@ -227,6 +239,7 @@ function listener_count() {
 }
 
 function update_user(u) {
+    u.active = true;
     for (i = 0; i < users.length; i++) {
         ul = users[i];
         if (u.serverid == ul.serverid) {
@@ -241,6 +254,11 @@ function forget_user(track) {
     for (i = 0; i < users.length; i++) {
         ul = users[i];
         if (track.serverid == ul.serverid) {
+            log.warn(
+                "Dropping %s from userlist (%s)",
+                ul.nickanme,
+                ul.serverid
+            );
             users.splice(i, 1);
             return;
         }
