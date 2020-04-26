@@ -121,8 +121,6 @@ wss.on("connection", function connection(ws, req) {
 
         ws.log("DROP", JSON.stringify(msg));
 
-        notifyChannel(msg);
-
         wss.clients.forEach(function each(client) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 if (
