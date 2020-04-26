@@ -25,10 +25,16 @@ function warn(template, ...args) {
 
 function error(template, ...args) {
     console.log(chalk.redBright("[ERROR] ")+template, ...args);
+    if (config.flag("debug")) {
+        djserver.report_error(util.format(template, ...args));
+    }
 }
 
 function fatal(template, ...args) {
     console.log(chalk.redBright("[ERROR] ")+template, ...args);
+    if (config.flag("debug")) {
+        djserver.report_error(util.format(template, ...args));
+    }
     process.exit(255);
 }
 

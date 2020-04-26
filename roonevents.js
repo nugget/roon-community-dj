@@ -311,13 +311,8 @@ function announce_notfound(t) {
 
     var msg = new Object();
     msg.action = "NOTFOUND";
-    msg.channel = config.get("channel");
-    msg.nickname = config.get("nickname");
-    msg.serverid = config.get("serverid");
     msg.title = t.title;
     msg.subtitle = t.subtitle;
-    msg.version = pjson.version;
-
     djserver.broadcast(msg);
 }
 
@@ -344,13 +339,9 @@ function announce_play(zd) {
         }
     }
 
-    msg.channel = config.get("channel");
-    msg.nickname = config.get("nickname");
-    msg.serverid = config.get("serverid");
     msg.title = zd.now_playing.three_line.line1;
     msg.subtitle = zd.now_playing.three_line.line2;
     msg.album = zd.now_playing.three_line.line3;
-    msg.version = pjson.version;
     msg.length = zd.now_playing.length;
     msg.seek_position = zd.now_playing.seek_position;
 

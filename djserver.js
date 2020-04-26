@@ -307,13 +307,6 @@ function slave_track(track) {
 function announce() {
     var msg = new Object();
     msg.action = "ANNOUNCE";
-    msg.channel = config.get("channel");
-    msg.nickname = config.get("nickname");
-    msg.serverid = config.get("serverid");
-    msg.version = pjson.version;
-    msg.mode = config.get("mode");
-    msg.enabled = config.flag("enabled");
-
     broadcast(msg);
 }
 
@@ -340,9 +333,6 @@ function process_notfound(msg) {
 function poll_response(track) {
     var msg = new Object();
     msg.action = "ROLLCALL";
-    msg.serverid = config.get("serverid");
-    msg.channel = config.get("channel");
-
     broadcast(msg);
 }
 
@@ -350,8 +340,6 @@ function report_error(text, err, trace) {
     if (config.flag("debug")) {
         var msg = new Object();
         msg.action = "ERROR";
-        msg.serverid = config.get("serverid");
-        msg.channel = config.get("channel");
         msg.text = text;
         msg.errtext = err;
         msg.trace = trace;
@@ -375,17 +363,32 @@ function search_success(t, err, r) {
         // Disabled this because it isn've very useful any more
         var msg = new Object();
         msg.action = "SEARCH_SUCCESS";
-        msg.serverid = config.get("serverid");
-        msg.channel = config.get("channel");
         msg.title = t.title;
         msg.subtitle = t.subtitle;
-        msg.version = pjson.version;
-
         broadcast(msg);
     }
 }
 
 function broadcast(msg) {
+    if (!msg.serverid) {
+        msg.serverid = config.get("serverid");
+    }
+    if (!msg.channel) {
+        msg.channel = config.get("channel");
+    }
+    if (!msg.nickname) {
+        msg.nickname = config.get("nickname");
+    }
+    if (!msg.mode) {
+        msg.mode = config.get("mode");
+    }
+    if (typeof msg.enabled === "undefined") {
+        msg.enabled = config.flag("enabled");
+    }
+    if (!msg.version) {
+        msg.version = pjson.version;
+    }
+
     ws.send(JSON.stringify(msg));
 }
 
