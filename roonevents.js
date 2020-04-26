@@ -82,6 +82,8 @@ function play_track(t) {
     if (t.seek_position && t.seek_position > 10) {
         log.info("I'll start the song at %d seconds");
         current_seek = t.seek_position;
+    } else {
+        current_seek = 0;
     }
 
     opts = Object.assign({
