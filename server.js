@@ -113,7 +113,26 @@ wss.on("connection", function connection(ws, req) {
     });
 
     ws.on("close", function close() {
-        ws.log("DROP", ws.dj.serverid, ws.dj.channel);
+        var msg = {}
+        msg.nickname = ws.dj.nickname;
+        msg.serverid = ws.dj.serverid;
+        msg.channel = ws.dj.channel;
+        msg.action = "DROP";
+
+        ws.log("DROP", JSON.stringify(msg));
+
+        notifyChannel(msg);
+
+        wss.clients.forEach(function each(client) {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+                if (
+                    typeof client.dj.channel !== "undefined" &&
+                    client.dj.channel.toUpperCase() == msg.channel.toUpperCase()
+                ) {
+                    client.send(JSON.stringify(msg));
+                }
+            }
+        });
     });
 });
 
@@ -131,6 +150,10 @@ function probeClient(c, msg) {
 
     if (typeof msg.serverid !== "undefined") {
         c.dj.serverid = msg.serverid;
+    }
+
+    if (typeof msg.nickname !== "undefined") {
+        c.dj.nickname = msg.nickname;
     }
 
     if (typeof msg.enabled !== "undefined") {
