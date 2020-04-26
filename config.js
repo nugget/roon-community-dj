@@ -14,7 +14,7 @@ DefaultConfig = {
     enabled: true,
     serverid: "",
     nickname: "",
-    enableradio: true,
+    enableradio: false,
     disableradio: false,
     notfound: "any"
 };
