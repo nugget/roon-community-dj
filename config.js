@@ -13,7 +13,10 @@ DefaultConfig = {
     channel: "chaos",
     enabled: true,
     serverid: "",
-    nickname: ""
+    nickname: "",
+    enableradio: true,
+    disableradio: false,
+    notfound: "any"
 };
 
 var current = {};
@@ -37,6 +40,12 @@ function load(roon) {
         console.log("Assigning new serverid", current.serverid);
     }
     console.log("Debugging output is " + debug());
+
+    Object.keys(DefaultConfig).forEach(function (key) {
+        if (typeof current[key] === "undefined") {
+            console.log("Seeding new config item %s", key);
+        }
+    });
 }
 
 function get(_key) {
@@ -147,6 +156,40 @@ function layout(settings) {
                 title: "Nickname",
                 max_length: 16,
                 setting: "nickname"
+            },
+            {
+                type: "dropdown",
+                title: "Turn off Roon Radio when Listening",
+                values: fakeBoolean,
+                setting: "disableradio"
+            }
+        ]
+    });
+
+    l.layout.push({
+        type: "group",
+        title: "DJ Settings",
+        items: [
+            {
+                type: "dropdown",
+                title: "Skip 'not found' songs",
+                values: [
+                    {
+                        title: "if ANY listener fails",
+                        value: "any"
+                    },
+                    {
+                        title: "if ALL listeners fail",
+                        value: "all"
+                    }
+                ],
+                setting: "notfound"
+            },
+            {
+                type: "dropdown",
+                title: "Turn on Roon Radio when DJing",
+                values: fakeBoolean,
+                setting: "enableradio"
             }
         ]
     });
