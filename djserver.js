@@ -113,7 +113,7 @@ function parse_message(data) {
                 process_notfound(msg);
                 break;
             case "DROP":
-                forget_user();
+                forget_user(msg);
                 break;
             default:
                 log.info("Unknown message type", msg.action);
@@ -256,7 +256,7 @@ function update_user(u) {
 function forget_user(track) {
     for (i = 0; i < users.length; i++) {
         ul = users[i];
-        if (track.serverid == ul.serverid) {
+        if (typeof track !== "undefined" && track.serverid == ul.serverid) {
             log.warn(
                 "Dropping %s from userlist (%s)",
                 ul.nickanme,
