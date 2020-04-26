@@ -94,7 +94,10 @@ function parse_message(data) {
         track_user(msg);
         switch (msg.action) {
             case "PLAYING":
-                reset_users();
+                if (msg.seek_position <= 1) {
+                    // Only reset users if this is a new song playing
+                    reset_users();
+                }
                 track_user(msg);
                 slave_track(msg);
                 break;
