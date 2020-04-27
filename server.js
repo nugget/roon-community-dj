@@ -252,20 +252,32 @@ var root = {
     users: ({ channel }) => {
         var l = [];
         wss.clients.forEach(function each(c) {
-            if (!channel) {
-                l.push(c.dj);
-            } else if (channel &&
-                c.dj.channel &&
-                channel.toUpperCase() == c.dj.channel.toUpperCase()
-            ) {
-                l.push(c.dj);
+            if (c.readyState === WebSocket.OPEN) {
+                if (!channel) {
+                    l.push(c.dj);
+                } else if (
+                    channel &&
+                    c.dj.channel &&
+                    channel.toUpperCase() == c.dj.channel.toUpperCase()
+                ) {
+                    l.push(c.dj);
+                }
             }
         });
         return l;
     },
     channels: () => {
-        var l = [];
-        return l;
+        var channelList = [];
+        wss.clients.forEach(function each(c) {
+            var obj = {};
+            console.log(c.dj);
+            if (c.readyState === WebSocket.OPEN && typeof c.dj.channel !== "undefined") {
+                obj.name = c.dj.channel;
+                channelList.push(obj);
+            }
+        });
+
+        return channelList;
     }
 };
 
