@@ -5,6 +5,10 @@ const semver = require("semver");
 const WebSocket = require("ws");
 const util = require("util");
 
+var express = require("express");
+var graphqlHTTP = require("express-graphql");
+var { buildSchema } = require("graphql");
+
 const wss = new WebSocket.Server({
     port: 4242,
     perMessageDeflate: {
@@ -52,14 +56,14 @@ function debug(...args) {
     if (!debugFlag) {
         return;
     }
-    log(...args)
+    log(...args);
 }
 
 function clientDebug(...args) {
     if (!debugFlag) {
         return;
     }
-    clientLog(...args)
+    clientLog(...args);
 }
 
 function exit(signal) {
@@ -104,7 +108,8 @@ wss.on("connection", function connection(ws, req) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 if (
                     typeof client.dj.channel !== "undefined" &&
-                    client.dj.channel.toUpperCase() == msg.channel.toUpperCase()
+                    client.dj.channel.toUpperCase() ==
+                        msg.channel.toUpperCase()
                 ) {
                     client.send(data);
                 }
@@ -113,7 +118,7 @@ wss.on("connection", function connection(ws, req) {
     });
 
     ws.on("close", function close() {
-        var msg = {}
+        var msg = {};
         msg.action = "DROP";
         msg.channel = ws.dj.channel;
         msg.nickname = ws.dj.nickname;
@@ -125,7 +130,9 @@ wss.on("connection", function connection(ws, req) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 if (
                     typeof client.dj.channel !== "undefined" &&
-                    client.dj.channel.toUpperCase() == msg.channel.toUpperCase()
+                    typeof msg.channel !== "unfefined" &&
+                    client.dj.channel.toUpperCase() ==
+                        msg.channel.toUpperCase()
                 ) {
                     client.send(JSON.stringify(msg));
                 }
@@ -188,7 +195,7 @@ function checkVersion(c) {
         reason = util.format(
             "Upgrade required, server requires version %s",
             requiredVersion()
-        )
+        );
         reject(c, reason);
         return false;
     }
@@ -213,3 +220,63 @@ function reject(c, reason) {
     c.send(JSON.stringify(msg));
     c.log("Rejected client (%s)", reason);
 }
+
+// GraphQL Handlers Here
+
+var schema = buildSchema(`
+    type User {
+        channel: String
+        serverid: String
+        nickname: String
+        enabled: Boolean
+        mode: String
+        version: String
+    }
+
+    type Channel {
+        name: String
+        users: [User]
+    }
+
+    type Query {
+        version: String
+        users(channel: String): [User]
+        channels: [Channel]
+    }
+`);
+
+var root = {
+    hello: () => {
+        return pjson.version;
+    },
+    users: ({ channel }) => {
+        var l = [];
+        wss.clients.forEach(function each(c) {
+            if (!channel) {
+                l.push(c.dj);
+            } else if (channel &&
+                c.dj.channel &&
+                channel.toUpperCase() == c.dj.channel.toUpperCase()
+            ) {
+                l.push(c.dj);
+            }
+        });
+        return l;
+    },
+    channels: () => {
+        var l = [];
+        return l;
+    }
+};
+
+var api = express();
+api.use(
+    "/graphql",
+    graphqlHTTP({
+        schema: schema,
+        rootValue: root,
+        graphiql: true
+    })
+);
+api.listen(8282);
+console.log("Running a GraphQL API server at http://localhost:8282/graphql");

@@ -7,6 +7,7 @@ const util = require("util");
 //
 DefaultConfig = {
     server: "wss://dj.macnugget.org/",
+    api: "https://dj.macnugget.org/graphql",
     djzone: { output_id: "", name: "" },
     mode: "slave",
     debug: false,
