@@ -268,12 +268,12 @@ function handler(cmd, data) {
                                 // Do nothing during short-lived loading pauses
                                 break;
                             case "playing":
-                                playing_handler(zd);
+                                zone_handler(zd, announce_play);
                                 break;
                             case "paused":
-                                paused_handler(zd);
+                                zone_handler(zd, announce_pause);
                             case "stopped":
-                                stopped_handler(zd);
+                                zone_handler(zd, announce_stop);
                                 break;
                             default:
                                 log.warn("UNKNOWN zone state: %s", zd.state);
@@ -286,7 +286,7 @@ function handler(cmd, data) {
     }
 }
 
-function playing_handler(zd) {
+function zone_handler(zd, cb) {
     if (!config.flag("enabled")) {
         log.info("extension is disabled");
         return;
@@ -298,61 +298,21 @@ function playing_handler(zd) {
         var val = o[key];
         if (val.output_id == config.get("djzone").output_id) {
             // This is a song playing in the configured DJ Zone
-            announce_play(zd);
-        } else {
-            log.info(
-                "Mismatched zone",
-                val.output_id,
-                config.get("djzone").output_id
-            );
+            cb(zd);
         }
     });
 }
 
-function stopped_handler(zd) {
-    if (!config.flag("enabled")) {
-        return;
-    }
-
-    o = zd.outputs;
-
-    Object.keys(o).forEach(function (key) {
-        var val = o[key];
-        if (val.output_id == config.get("djzone").output_id) {
-            var msg = new Object();
-            msg.action = "STOPPED";
-            djserver.broadcast(msg);
-        } else {
-            log.info(
-                "Mismatched zone",
-                val.output_id,
-                config.get("djzone").output_id
-            );
-        }
-    });
+function announce_stop(zd) {
+    var msg = new Object();
+    msg.action = "STOPPED";
+    djserver.broadcast(msg);
 }
 
-function paused_handler(zd) {
-    if (!config.flag("enabled")) {
-        return;
-    }
-
-    o = zd.outputs;
-
-    Object.keys(o).forEach(function (key) {
-        var val = o[key];
-        if (val.output_id == config.get("djzone").output_id) {
-            var msg = new Object();
-            msg.action = "PAUSED";
-            djserver.broadcast(msg);
-        } else {
-            log.info(
-                "Mismatched zone",
-                val.output_id,
-                config.get("djzone").output_id
-            );
-        }
-    });
+function announce_pause(zd) {
+    var msg = new Object();
+    msg.action = "PAUSED";
+    djserver.broadcast(msg);
 }
 
 function announce_nowplaying() {
