@@ -28,6 +28,20 @@ function core_paired(_core) {
 }
 
 function track_match(a, b) {
+    if (!b) {
+        // User only supplied one track, so let's match against the current
+        // song that's playing
+        let zd = transport.zone_by_output_id(config.get("djzone").output_id);
+        if (zd.state === "playing") {
+            b = {
+                title: zd.now_playing.three_line.line1,
+                subtitle: zd.now_playing.three_line.line2
+            };
+        }
+    }
+    if (!a || !b) {
+        return false;
+    }
     if (a.title == b.title && a.subtitle.startsWith(b.subtitle)) {
         return true;
     }
@@ -411,3 +425,4 @@ exports.announce_play = announce_play;
 exports.announce_nowplaying = announce_nowplaying;
 exports.skip_track = skip_track;
 exports.new_song = new_song;
+exports.track_match = track_match;

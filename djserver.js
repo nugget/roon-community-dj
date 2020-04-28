@@ -318,6 +318,10 @@ function process_announce(msg) {
 
 function process_notfound(msg) {
     if (config.get("mode") == "master") {
+        if (!roonevents.track_match(msg)) {
+            log.info("NOTFOUND for previous play ignored");
+            return;
+        }
         switch (config.get("notfound")) {
             case "any":
                 roonevents.skip_track();
