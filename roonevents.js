@@ -271,6 +271,7 @@ function handler(cmd, data) {
                                 playing_handler(zd);
                                 break;
                             case "paused":
+                                paused_handler(zd);
                             case "stopped":
                                 stopped_handler(zd);
                                 break;
@@ -385,7 +386,17 @@ function announce_play(zd) {
     djserver.set_status();
 }
 
-function stopped_handler(zd) {}
+function stopped_handler(zd) {
+    var msg = new Object();
+    msg.action = "STOPPED";
+    djserver.broadcast(msg);
+}
+
+function paused_handler(zd) {
+    var msg = new Object();
+    msg.action = "PAUSED";
+    djserver.broadcast(msg);
+}
 
 function core_unpaired(_core) {
     core = _core;

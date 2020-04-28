@@ -167,6 +167,18 @@ function processMessage(c, msg) {
                 channelCache[cUC] = a;
                 c.dj.activity = channelCache[cUC];
                 break;
+            case "STOPPED":
+                a.description = "Nothing Playing";
+
+                channelCache[cUC] = a;
+                c.dj.activity = a;
+                break;
+            case "PAUSED":
+                a.description = "Nothing Playing";
+
+                channelCache[cUC] = a;
+                c.dj.activity = a;
+                break;
             case "SLAVE":
                 a.description = "Listening";
                 a.title = msg.title;
