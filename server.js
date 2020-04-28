@@ -103,6 +103,9 @@ wss.on("connection", function connection(ws, req) {
             return;
         }
 
+        if (msg.mode == "slave") {
+            didTheDJDrop(ws, msg);
+        }
         // console.log(ws);
 
         ws.log("MESG", data);
@@ -127,6 +130,8 @@ wss.on("connection", function connection(ws, req) {
         msg.nickname = ws.dj.nickname;
         msg.serverid = ws.dj.serverid;
 
+        didTheDJDrop(ws, msg);
+
         ws.log("DROP", JSON.stringify(msg));
 
         wss.clients.forEach(function each(client) {
@@ -144,6 +149,17 @@ wss.on("connection", function connection(ws, req) {
     });
 });
 
+function didTheDJDrop(c, msg) {
+    cUC = msg.channel.toUpperCase();
+    if (typeof channelCache[cUC] !== "undefined") {
+        var currentDJ = channelCache[cUC].serverid;
+        if (msg.serverid === currentDJ) {
+            c.log("We lost our DJ");
+            channelCache[cUC] = {};
+        }
+    }
+}
+
 function processMessage(c, msg) {
     if (typeof msg.channel !== "undefined") {
         cUC = msg.channel.toUpperCase();
@@ -154,7 +170,7 @@ function processMessage(c, msg) {
 
         var a = {};
         a.action = msg.action;
-        a.start = Math.floor(new Date() / 1000);
+        a.start = Math.floor(new Date() / 1000) - msg.seek_position;
 
         switch (msg.action) {
             case "PLAYING":
@@ -163,6 +179,7 @@ function processMessage(c, msg) {
                 a.artist = msg.subtitle;
                 a.album = msg.album;
                 a.length = msg.length;
+                a.serverid = msg.serverid;
 
                 if (msg.mode == "master") {
                     channelCache[cUC] = a;
