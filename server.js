@@ -360,7 +360,6 @@ function channelList() {
     var channelList = [];
     wss.clients.forEach(function each(c) {
         var obj = {};
-        console.log(c.dj);
         if (
             c.readyState === WebSocket.OPEN &&
             typeof c.dj.channel !== "undefined"
@@ -370,7 +369,6 @@ function channelList() {
             );
             if (!picked) {
                 // Usern's channel is new to us
-                console.log("new channel");
                 obj.name = c.dj.channel;
                 obj.users = userList(obj.name);
                 obj.userCount = obj.users.length;
