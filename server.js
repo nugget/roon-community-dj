@@ -299,6 +299,7 @@ var schema = buildSchema(`
     type Channel {
         name: String
         users: [User]
+        dj: User
         userCount: Int
         activity: Action
     }
@@ -362,6 +363,16 @@ function userList(channel) {
     return l;
 }
 
+function channelDJ(channel) {
+    var l = userList(channel);
+    for (var u of l) {
+        if (l.mode == "master") {
+            return u;
+        }
+    }
+    return {};
+}
+
 function channelList() {
     var channelList = [];
     wss.clients.forEach(function each(c) {
@@ -378,7 +389,12 @@ function channelList() {
                 obj.name = c.dj.channel;
                 obj.users = userList(obj.name);
                 obj.userCount = obj.users.length;
-                obj.activity = channelCache[c.dj.channel.toUpperCase()];
+                obj.dj = channelDJ(obj.name);
+                if (!obj.dj.serverid) {
+                    obj.activity = { action: "NODJ", description: "No DJ" };
+                } else {
+                    obj.activity = channelCache[c.dj.channel.toUpperCase()];
+                }
                 channelList.push(obj);
             }
         }
