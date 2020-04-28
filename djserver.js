@@ -209,7 +209,7 @@ function reset_users() {
 
 function user_stats() {
     log.info("There are %d known users", users.length);
-    console.log(users);
+    // console.log(users);
 }
 
 function user_is_known(serverid) {
