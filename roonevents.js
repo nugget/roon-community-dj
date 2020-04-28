@@ -309,6 +309,52 @@ function playing_handler(zd) {
     });
 }
 
+function stopped_handler(zd) {
+    if (!config.flag("enabled")) {
+        return;
+    }
+
+    o = zd.outputs;
+
+    Object.keys(o).forEach(function (key) {
+        var val = o[key];
+        if (val.output_id == config.get("djzone").output_id) {
+            var msg = new Object();
+            msg.action = "STOPPED";
+            djserver.broadcast(msg);
+        } else {
+            log.info(
+                "Mismatched zone",
+                val.output_id,
+                config.get("djzone").output_id
+            );
+        }
+    });
+}
+
+function paused_handler(zd) {
+    if (!config.flag("enabled")) {
+        return;
+    }
+
+    o = zd.outputs;
+
+    Object.keys(o).forEach(function (key) {
+        var val = o[key];
+        if (val.output_id == config.get("djzone").output_id) {
+            var msg = new Object();
+            msg.action = "PAUSED";
+            djserver.broadcast(msg);
+        } else {
+            log.info(
+                "Mismatched zone",
+                val.output_id,
+                config.get("djzone").output_id
+            );
+        }
+    });
+}
+
 function announce_nowplaying() {
     if (!ready) {
         return;
@@ -384,18 +430,6 @@ function announce_play(zd) {
     log.info("Announced playback of '%s - %s'", msg.title, msg.subtitle);
 
     djserver.set_status();
-}
-
-function stopped_handler(zd) {
-    var msg = new Object();
-    msg.action = "STOPPED";
-    djserver.broadcast(msg);
-}
-
-function paused_handler(zd) {
-    var msg = new Object();
-    msg.action = "PAUSED";
-    djserver.broadcast(msg);
 }
 
 function core_unpaired(_core) {
