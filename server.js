@@ -366,7 +366,7 @@ function userList(channel) {
 function channelDJ(channel) {
     var l = userList(channel);
     for (var u of l) {
-        if (l.mode == "master") {
+        if (u.mode == "master") {
             return u;
         }
     }
