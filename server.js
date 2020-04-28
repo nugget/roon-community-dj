@@ -9,6 +9,8 @@ var express = require("express");
 var graphqlHTTP = require("express-graphql");
 var { buildSchema } = require("graphql");
 
+var channelCache = new Map();
+
 const wss = new WebSocket.Server({
     port: 4242,
     perMessageDeflate: {
@@ -114,6 +116,7 @@ wss.on("connection", function connection(ws, req) {
                     client.send(data);
                 }
             }
+            processMessage(ws, msg);
         });
     });
 
@@ -130,7 +133,7 @@ wss.on("connection", function connection(ws, req) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 if (
                     typeof client.dj.channel !== "undefined" &&
-                    typeof msg.channel !== "unfefined" &&
+                    typeof msg.channel !== "undefined" &&
                     client.dj.channel.toUpperCase() ==
                         msg.channel.toUpperCase()
                 ) {
@@ -140,6 +143,47 @@ wss.on("connection", function connection(ws, req) {
         });
     });
 });
+
+function processMessage(c, msg) {
+    if (typeof msg.channel !== "undefined") {
+        cUC = msg.channel.toUpperCase();
+
+        if (!channelCache[cUC]) {
+            channelCache[cUC] = {};
+        }
+
+        var a = {};
+        a.action = msg.action;
+        a.start = Math.floor(new Date() / 1000);
+
+        switch (msg.action) {
+            case "PLAYING":
+                a.description = "DJ'ing";
+                a.title = msg.title;
+                a.artist = msg.subtitle;
+                a.album = msg.album;
+                a.length = msg.length;
+
+                channelCache[cUC] = a;
+                c.dj.activity = channelCache[cUC];
+                break;
+            case "SLAVE":
+                a.description = "Listening";
+                a.title = msg.title;
+                a.artist = msg.subtitle;
+                a.album = msg.album;
+                a.length = msg.length;
+
+                c.dj.activity = a;
+                break;
+            case "NOTFOUND":
+                a.description = "Song Not Available";
+
+                c.dj.activity = a;
+                break;
+        }
+    }
+}
 
 function setRemoteAddr(c, req) {
     c.dj.remoteAddr =
@@ -231,13 +275,24 @@ var schema = buildSchema(`
         enabled: Boolean
         mode: String
         version: String
+        activity: Action
     }
 
     type Channel {
         name: String
         users: [User]
         userCount: Int
-        activity: String
+        activity: Action
+    }
+
+    type Action {
+        action: String
+        description: String
+        start: Int
+        title: String
+        artist: String
+        album: String
+        length: Int
     }
 
     type Query {
@@ -307,6 +362,7 @@ function channelList() {
                 obj.name = c.dj.channel;
                 obj.users = userList(obj.name);
                 obj.userCount = obj.users.length;
+                obj.activity = channelCache[c.dj.channel.toUpperCase()];
                 channelList.push(obj);
             }
         }
