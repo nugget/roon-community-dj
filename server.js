@@ -164,19 +164,25 @@ function processMessage(c, msg) {
                 a.album = msg.album;
                 a.length = msg.length;
 
-                channelCache[cUC] = a;
+                if (msg.mode == "master") {
+                    channelCache[cUC] = a;
+                }
                 c.dj.activity = channelCache[cUC];
                 break;
             case "STOPPED":
                 a.description = "Nothing Playing";
 
-                channelCache[cUC] = a;
+                if (msg.mode == "master") {
+                    channelCache[cUC] = a;
+                }
                 c.dj.activity = a;
                 break;
             case "PAUSED":
                 a.description = "Nothing Playing";
 
-                channelCache[cUC] = a;
+                if (msg.mode == "master") {
+                    channelCache[cUC] = a;
+                }
                 c.dj.activity = a;
                 break;
             case "SLAVE":
