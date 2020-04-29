@@ -209,7 +209,7 @@ function reset_users() {
 
 function user_stats() {
     log.info("There are %d known users", users.length);
-    console.log(users);
+    // console.log(users);
 }
 
 function user_is_known(serverid) {
@@ -318,6 +318,10 @@ function process_announce(msg) {
 
 function process_notfound(msg) {
     if (config.get("mode") == "master") {
+        if (!roonevents.track_match(msg)) {
+            log.info("NOTFOUND for previous play ignored");
+            return;
+        }
         switch (config.get("notfound")) {
             case "any":
                 roonevents.skip_track();

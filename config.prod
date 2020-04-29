@@ -1,0 +1,27 @@
+{
+    "roonstate": {
+        "tokens": {
+            "6a638bf2-37bf-4c22-9bef-d97f4d2e1b84": "82b66d0d-c2bc-4b89-821d-bbc39e0ea5db"
+        },
+        "paired_core_id": "6a638bf2-37bf-4c22-9bef-d97f4d2e1b84"
+    },
+    "settings": {
+        "server": "wss://dj.macnugget.org/",
+        "api": "https://dj.macnugget.org/graphql",
+        "djzone": {
+            "output_id": "17016fe79309b12a12631f781b8850bcb9e3",
+            "name": "Office"
+        },
+        "mode": "slave",
+        "debug": true,
+        "channel": "Lunchtime",
+        "enabled": true,
+        "serverid": "33461143-2a6f-44fc-be6d-5181005ded86",
+        "djname": "nugget",
+        "nickname": "nugget",
+        "activedj": "Daniel aka Rugby",
+        "disableradio": true,
+        "notfound": "any",
+        "enableradio": true
+    }
+}

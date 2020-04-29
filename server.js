@@ -5,6 +5,12 @@ const semver = require("semver");
 const WebSocket = require("ws");
 const util = require("util");
 
+var express = require("express");
+var graphqlHTTP = require("express-graphql");
+var { buildSchema } = require("graphql");
+
+var channelCache = new Map();
+
 const wss = new WebSocket.Server({
     port: 4242,
     perMessageDeflate: {
@@ -52,14 +58,14 @@ function debug(...args) {
     if (!debugFlag) {
         return;
     }
-    log(...args)
+    log(...args);
 }
 
 function clientDebug(...args) {
     if (!debugFlag) {
         return;
     }
-    clientLog(...args)
+    clientLog(...args);
 }
 
 function exit(signal) {
@@ -97,6 +103,9 @@ wss.on("connection", function connection(ws, req) {
             return;
         }
 
+        if (msg.mode == "slave") {
+            didTheDJDrop(ws, msg);
+        }
         // console.log(ws);
 
         ws.log("MESG", data);
@@ -104,20 +113,24 @@ wss.on("connection", function connection(ws, req) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 if (
                     typeof client.dj.channel !== "undefined" &&
-                    client.dj.channel.toUpperCase() == msg.channel.toUpperCase()
+                    client.dj.channel.toUpperCase() ==
+                        msg.channel.toUpperCase()
                 ) {
                     client.send(data);
                 }
             }
+            processMessage(ws, msg);
         });
     });
 
     ws.on("close", function close() {
-        var msg = {}
+        var msg = {};
         msg.action = "DROP";
         msg.channel = ws.dj.channel;
         msg.nickname = ws.dj.nickname;
         msg.serverid = ws.dj.serverid;
+
+        didTheDJDrop(ws, msg);
 
         ws.log("DROP", JSON.stringify(msg));
 
@@ -125,7 +138,9 @@ wss.on("connection", function connection(ws, req) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 if (
                     typeof client.dj.channel !== "undefined" &&
-                    client.dj.channel.toUpperCase() == msg.channel.toUpperCase()
+                    typeof msg.channel !== "undefined" &&
+                    client.dj.channel.toUpperCase() ==
+                        msg.channel.toUpperCase()
                 ) {
                     client.send(JSON.stringify(msg));
                 }
@@ -133,6 +148,77 @@ wss.on("connection", function connection(ws, req) {
         });
     });
 });
+
+function didTheDJDrop(c, msg) {
+    cUC = msg.channel.toUpperCase();
+    if (typeof channelCache[cUC] !== "undefined") {
+        var currentDJ = channelCache[cUC].serverid;
+        if (msg.serverid === currentDJ) {
+            c.log("We lost our DJ");
+            channelCache[cUC] = {};
+        }
+    }
+}
+
+function processMessage(c, msg) {
+    if (typeof msg.channel !== "undefined") {
+        cUC = msg.channel.toUpperCase();
+
+        if (!channelCache[cUC]) {
+            channelCache[cUC] = {};
+        }
+
+        var a = {};
+        a.action = msg.action;
+        a.start = Math.floor(new Date() / 1000) - msg.seek_position;
+
+        switch (msg.action) {
+            case "PLAYING":
+                a.description = "DJ'ing";
+                a.title = msg.title;
+                a.artist = msg.subtitle;
+                a.album = msg.album;
+                a.length = msg.length;
+                a.serverid = msg.serverid;
+
+                if (msg.mode == "master") {
+                    channelCache[cUC] = a;
+                }
+                c.dj.activity = channelCache[cUC];
+                break;
+            case "STOPPED":
+                a.description = "Nothing Playing";
+
+                if (msg.mode == "master") {
+                    channelCache[cUC] = a;
+                }
+                c.dj.activity = a;
+                break;
+            case "PAUSED":
+                a.description = "Nothing Playing";
+
+                if (msg.mode == "master") {
+                    channelCache[cUC] = a;
+                }
+                c.dj.activity = a;
+                break;
+            case "SLAVE":
+                a.description = "Listening";
+                a.title = msg.title;
+                a.artist = msg.subtitle;
+                a.album = msg.album;
+                a.length = msg.length;
+
+                c.dj.activity = a;
+                break;
+            case "NOTFOUND":
+                a.description = "Song Not Available";
+
+                c.dj.activity = a;
+                break;
+        }
+    }
+}
 
 function setRemoteAddr(c, req) {
     c.dj.remoteAddr =
@@ -188,7 +274,7 @@ function checkVersion(c) {
         reason = util.format(
             "Upgrade required, server requires version %s",
             requiredVersion()
-        )
+        );
         reject(c, reason);
         return false;
     }
@@ -212,4 +298,124 @@ function reject(c, reason) {
 
     c.send(JSON.stringify(msg));
     c.log("Rejected client (%s)", reason);
+}
+
+// GraphQL Handlers Here
+
+var schema = buildSchema(`
+    type User {
+        channel: String
+        serverid: String
+        nickname: String
+        enabled: Boolean
+        mode: String
+        version: String
+        activity: Action
+    }
+
+    type Channel {
+        name: String
+        users: [User]
+        dj: User
+        userCount: Int
+        activity: Action
+    }
+
+    type Action {
+        action: String
+        description: String
+        start: Int
+        title: String
+        artist: String
+        album: String
+        length: Int
+    }
+
+    type Query {
+        version: String
+        users(channel: String): [User]
+        channels: [Channel]
+    }
+`);
+
+var root = {
+    hello: () => {
+        return pjson.version;
+    },
+    users: ({ channel }) => {
+        return userList(channel);
+    },
+    channels: () => {
+        return channelList();
+    }
+};
+
+var api = express();
+api.use(
+    "/graphql",
+    graphqlHTTP({
+        schema: schema,
+        rootValue: root,
+        graphiql: true
+    })
+);
+api.listen(8282);
+console.log("Running a GraphQL API server at http://localhost:8282/graphql");
+
+function userList(channel) {
+    var l = [];
+    wss.clients.forEach(function each(c) {
+        if (c.readyState === WebSocket.OPEN) {
+            if (!channel) {
+                l.push(c.dj);
+            } else if (
+                channel &&
+                c.dj.channel &&
+                channel.toUpperCase() == c.dj.channel.toUpperCase()
+            ) {
+                l.push(c.dj);
+            }
+        }
+    });
+    return l;
+}
+
+function channelDJ(channel) {
+    var l = userList(channel);
+    for (var u of l) {
+        if (u.mode == "master") {
+            return u;
+        }
+    }
+    return {};
+}
+
+function channelList() {
+    var channelList = [];
+    wss.clients.forEach(function each(c) {
+        var obj = {};
+        if (
+            c.readyState === WebSocket.OPEN &&
+            typeof c.dj.channel !== "undefined"
+        ) {
+            var picked = channelList.find(
+                o => o.name.toUpperCase() === c.dj.channel.toUpperCase()
+            );
+            if (!picked) {
+                // Usern's channel is new to us
+                obj.name = c.dj.channel;
+                obj.users = userList(obj.name);
+                obj.userCount = obj.users.length;
+                obj.dj = channelDJ(obj.name);
+                if (!obj.dj.serverid) {
+                    obj.activity = { action: "NODJ", description: "No DJ" };
+                } else {
+                    obj.activity = channelCache[c.dj.channel.toUpperCase()];
+                }
+                channelList.push(obj);
+            }
+        }
+    });
+
+    return channelList;
 }

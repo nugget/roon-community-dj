@@ -28,6 +28,20 @@ function core_paired(_core) {
 }
 
 function track_match(a, b) {
+    if (!b) {
+        // User only supplied one track, so let's match against the current
+        // song that's playing
+        let zd = transport.zone_by_output_id(config.get("djzone").output_id);
+        if (zd.state === "playing") {
+            b = {
+                title: zd.now_playing.three_line.line1,
+                subtitle: zd.now_playing.three_line.line2
+            };
+        }
+    }
+    if (!a || !b) {
+        return false;
+    }
     if (a.title == b.title && a.subtitle.startsWith(b.subtitle)) {
         return true;
     }
@@ -268,11 +282,12 @@ function handler(cmd, data) {
                                 // Do nothing during short-lived loading pauses
                                 break;
                             case "playing":
-                                playing_handler(zd);
+                                zone_handler(zd, announce_play);
                                 break;
                             case "paused":
+                                zone_handler(zd, announce_pause);
                             case "stopped":
-                                stopped_handler(zd);
+                                zone_handler(zd, announce_stop);
                                 break;
                             default:
                                 log.warn("UNKNOWN zone state: %s", zd.state);
@@ -285,7 +300,7 @@ function handler(cmd, data) {
     }
 }
 
-function playing_handler(zd) {
+function zone_handler(zd, cb) {
     if (!config.flag("enabled")) {
         log.info("extension is disabled");
         return;
@@ -297,15 +312,21 @@ function playing_handler(zd) {
         var val = o[key];
         if (val.output_id == config.get("djzone").output_id) {
             // This is a song playing in the configured DJ Zone
-            announce_play(zd);
-        } else {
-            log.info(
-                "Mismatched zone",
-                val.output_id,
-                config.get("djzone").output_id
-            );
+            cb(zd);
         }
     });
+}
+
+function announce_stop(zd) {
+    var msg = new Object();
+    msg.action = "STOPPED";
+    djserver.broadcast(msg);
+}
+
+function announce_pause(zd) {
+    var msg = new Object();
+    msg.action = "PAUSED";
+    djserver.broadcast(msg);
 }
 
 function announce_nowplaying() {
@@ -385,8 +406,6 @@ function announce_play(zd) {
     djserver.set_status();
 }
 
-function stopped_handler(zd) {}
-
 function core_unpaired(_core) {
     core = _core;
     log.warn("Roon core unpaired", core);
@@ -406,3 +425,4 @@ exports.announce_play = announce_play;
 exports.announce_nowplaying = announce_nowplaying;
 exports.skip_track = skip_track;
 exports.new_song = new_song;
+exports.track_match = track_match;
