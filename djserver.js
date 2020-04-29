@@ -165,12 +165,11 @@ function set_status() {
     if (config.get("mode") == "master") {
         msg = "DJing in ";
     } else {
-        msg = "Listening to ";
+        msg = util.format("Listening to %s ", current_dj());
     }
 
     msg += util.format(
-        "%s in %s (%d listeners)",
-        current_dj(),
+        "in %s (%d listeners)",
         config.get("channel"),
         listener_count()
     );
