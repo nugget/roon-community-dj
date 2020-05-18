@@ -14,6 +14,7 @@ DefaultConfig = {
     channel: "chaos",
     enabled: true,
     serverid: "",
+    code: "",
     nickname: "",
     enableradio: false,
     disableradio: false,
@@ -40,6 +41,12 @@ function load(roon) {
         current.serverid = uuidv4();
         console.log("Assigning new serverid", current.serverid);
     }
+
+    if (typeof current.code === "undefined" || current.code == "") {
+        current.code = uuidv4().split("-")[1];
+        console.log("Assigning new security code", current.code);
+    }
+
     console.log("Debugging output is " + debug());
 
     Object.keys(DefaultConfig).forEach(function (key) {
@@ -234,6 +241,11 @@ function layout(settings) {
         type: "label",
         title: serverVersion
     });
+    l.layout.push({
+        type: "label",
+        title: util.format("Your private code is '%s'", current.code)
+    });
+
 
     return l;
 }
