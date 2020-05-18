@@ -150,6 +150,11 @@ wss.on("connection", function connection(ws, req) {
 });
 
 function didTheDJDrop(c, msg) {
+    if (typeof msg.channel === "undefined") {
+        // No channel in this message
+        return
+    }
+
     cUC = msg.channel.toUpperCase();
     if (typeof channelCache[cUC] !== "undefined") {
         var currentDJ = channelCache[cUC].serverid;
