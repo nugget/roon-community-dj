@@ -175,7 +175,7 @@ function processMessage(c, msg) {
 
         var a = {};
         a.action = msg.action;
-        a.start = Math.floor(new Date() / 1000) - msg.seek_position;
+        //a.start = Math.floor(new Date() / 1000) - msg.seek_position;
 
         switch (msg.action) {
             case "PLAYING":
